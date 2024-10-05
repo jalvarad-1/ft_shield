@@ -31,5 +31,24 @@
 #define MAX_CLIENTS 3
 #define MSG_SIZE	512
 
+typedef struct s_daemon
+{
+    sock_in         _addr;
+    int             _lock_file_fd;
+    int             _socket_fd;
+    struct pollfd   _poll_fds[MAX_CLIENTS + 1];
+    size_t          _pollfds_size;
+} t_daemon;
+
+t_daemon    *create_daemon( void );
+void        init_socket_struct(t_daemon *daemon);
+bool        init_server(t_daemon *daemon);
+void        ft_daemonize(void);
+void        create_lock_file(t_daemon *daemon);
+void        init_pollfd(t_daemon *daemon);
+void        server_listen(t_daemon *daemon);
+bool        fd_ready( t_daemon *daemon );
+void        accept_communication( t_daemon *daemon);
+void        receive_communication(int i, t_daemon *daemon);
 
 #endif
