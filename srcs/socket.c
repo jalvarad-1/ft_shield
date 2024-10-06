@@ -49,6 +49,8 @@ void	init_pollfd(t_daemon *daemon)
 {
 	memset(daemon->_poll_fds, 0, sizeof(daemon->_poll_fds));
 	daemon->_poll_fds[0] = (struct pollfd){daemon->_socket_fd, POLLIN, 0};
+    printf("Socket fd %i\n", daemon->_socket_fd);
+    daemon->_pollfds_size = 1;
 }
 
 void server_listen(t_daemon *daemon) {
@@ -141,10 +143,13 @@ void	receive_communication(int i, t_daemon *daemon)
 	if (buffer[0] != 0)
 	{	
 		// check if QUIT msg has been sent
-		if (strcmp(buffer, "quit") == 0) // Character sensitive
+		if (strcmp(buffer, "quit") == 0) // Case sensitive
 		{
 			//logger.log_entry("Request quit.", "INFO");
 			//logger.log_entry("Quitting", "INFO");
+            for (size_t i = 0; i < daemon->_pollfds_size; i++)
+                close(daemon->_poll_fds[i].fd);
+            free(daemon);
 			exit(EXIT_SUCCESS);
 		}
 		// add here a log entry with the message
@@ -156,13 +161,13 @@ void	receive_communication(int i, t_daemon *daemon)
 
 void	add_user(int fd, t_daemon *daemon)
 {
-	daemon->_poll_fds[0] = (struct pollfd){fd, POLLIN, 0};
+    // pollfds_size makes sure its always added at the end
+	daemon->_poll_fds[daemon->_pollfds_size] = (struct pollfd){fd, POLLIN, 0};
 	daemon->_pollfds_size++;
 }
 
 void	delete_user(int pollfd_position, t_daemon *daemon)
 {
 	close(daemon->_poll_fds[pollfd_position].fd);
-	daemon->_poll_fds[pollfd_position] = (struct pollfd){0, POLLIN, 0};
 	daemon->_pollfds_size--;
 }
