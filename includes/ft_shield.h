@@ -17,6 +17,8 @@
 #include <sys/file.h>
 #include <signal.h>
 #include <poll.h>
+#include <time.h>
+#include <string.h>
 
 
 #define	sock_in		struct sockaddr_in
@@ -27,9 +29,9 @@
 #define LOG_PATH  "/var/log/"
 #define LOG_NAME  "ft_shield.log"
 #define LOG_FILE  LOG_PATH LOG_NAME
-// TODO meter dependencias hpp en Makefile
 #define MAX_CLIENTS 3
 #define MSG_SIZE	512
+#define DEFAULT_PORT 4242
 
 typedef struct s_daemon
 {
@@ -50,5 +52,7 @@ void        server_listen(t_daemon *daemon);
 bool        fd_ready( t_daemon *daemon );
 void        accept_communication( t_daemon *daemon);
 void        receive_communication(int i, t_daemon *daemon);
+void        add_user(int fd, t_daemon *daemon);
+void        delete_user(int pollfd_position, t_daemon *daemon);
 
 #endif

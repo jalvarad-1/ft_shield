@@ -10,36 +10,35 @@ RESET 	= "\033[1;0m"
 #
 NAME 		= ft_shield
 CC 			= gcc
-CXXFLAGS 	= -Wall -Wextra -g -fsanitize=address -MMD -MP#-werror
+CXXFLAGS 	= -Wall -Wextra -g #-fsanitize=address -MMD -MP#-werror
 
 # PATHS #
 #
 SRC_PATH    	= srcs
-SUBFILE1_PATH   = reporter
-SUBFILE2_PATH   = daemon
+# SUBFILE1_PATH   = reporter
+# SUBFILE2_PATH   = daemon
 OBJ_PATH    	= objects
 
 # SOURCES #
 #
-SUBFILE1_SRC = reporter.c
-SUBFILE2_SRC = daemon.c
+# SUBFILE1_SRC = reporter.c
+# SUBFILE2_SRC = daemon.c
 
 
-SRC =	main.cpp \
-		$(addprefix $(SUBFILE1_PATH)/, $(SUBFILE1_SRC)) \
-		$(addprefix $(SUBFILE2_PATH)/, $(SUBFILE2_SRC))
+SRC =	main.c \
+		reporter.c \
+		daemon.c \
+		socket.c
 
 # RULES #
 #
 all: $(NAME)
 
 SRCS 	  = $(addprefix $(SRC_PATH)/, $(SRC))
-OBJS 	  = $(addprefix $(OBJ_PATH)/, $(SRC:%.cpp=%.o))
+OBJS 	  = $(addprefix $(OBJ_PATH)/, $(SRC:%.c=%.o))
 
 $(OBJ_PATH):
 	mkdir -p $(OBJ_PATH)
-	mkdir -p $(addprefix $(OBJ_PATH)/, $(SUBFILE1_PATH))
-	mkdir -p $(addprefix $(OBJ_PATH)/, $(SUBFILE2_PATH))
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c | $(OBJ_PATH)
 	$(CC) $(CXXFLAGS) $(INCLUDE) -c $< -o $@

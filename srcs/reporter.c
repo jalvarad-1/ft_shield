@@ -23,7 +23,7 @@ char* time_formatted() {
 // TODO probar eliminar el archivo mientras se ejecuta
 // TODO BONUS ocultar archivo de logs o encriptarlo 
 bool log_entry(char * log_msg, char * log_level, FILE *logger) {
-    if (logger == NULL) {
+    if (logger == NULL)
         return false;
     char* log_time = time_formatted();
     if (log_time == NULL) {
