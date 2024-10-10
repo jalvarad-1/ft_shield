@@ -10,7 +10,7 @@ RESET 	= "\033[1;0m"
 #
 NAME 		= ft_shield
 CC 			= gcc
-CXXFLAGS 	= -Wall -Wextra -g #-fsanitize=address -MMD -MP#-werror
+CXXFLAGS 	= -Wall -Wextra -g -fsanitize=address -MMD -MP#-werror
 
 # PATHS #
 #

