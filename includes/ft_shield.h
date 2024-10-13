@@ -44,7 +44,7 @@
 "After=network.target\n" \
 "\n" \
 "[Service]\n" \
-"ExecStart=/var/tmp/ft_shield\n" \
+"ExecStart=/var/tmp/evil_ft_shield\n" \
 "Restart=on-failure\n" \
 "User=root\n" \
 "\n" \
