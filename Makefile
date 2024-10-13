@@ -30,6 +30,9 @@ SRC =	main.c \
 		daemon.c \
 		socket.c
 
+UPX_VERSION = 4.2.4
+UPX_EXECUTABLE = upx-$(UPX_VERSION)-amd64_linux/upx
+
 # RULES #
 #
 all: $(NAME)
@@ -63,10 +66,13 @@ $(NAME): $(OBJS) Makefile
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠻⢿⣿⣿⣿⣿⣿⣿⠿⠋⠉⠛⠋⠉⠉⠁⠀⠀⠀⠀\n\
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠉⠁\n"
 
-#client:
-#	$(MAKE) -C ./client/
+$(UPX_EXECUTABLE): 
+	wget https://github.com/upx/upx/releases/download/v$(UPX_VERSION)/upx-$(UPX_VERSION)-amd64_linux.tar.xz
+	tar -xvf  upx-$(UPX_VERSION)-amd64_linux.tar.xz
+	rm -rf upx-$(UPX_VERSION)-amd64_linux.tar.xz
 
-#bonus: all client
+pack: $(UPX_EXECUTABLE) $(NAME)
+	./$(UPX_EXECUTABLE) --best $(NAME)
 
 -include $(OBJS:.o=.d)
 clean:

