@@ -1,0 +1,24 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # https://docs.vagrantup.com.
+
+  # Every Vagrant development environment requires a box. You can search for
+  # boxes at https://vagrantcloud.com/search.
+  config.vm.box = "ubuntu/focal64"
+
+  config.vm.provider "virtualbox" do |vb|
+    # Display the VirtualBox GUI when booting the machine
+    vb.gui = true
+  
+    # Customize the amount of memory on the VM:
+    vb.memory = "2048" # 1024 is not enough
+    vb.cpus = 1
+    config.vm.define "ft_shield" do |ft_shield|
+      ft_shield.vm.hostname = "ft_shield"
+      ft_shield.vm.provision "shell",
+        inline: "apt update; apt install -y git build-essential linux-headers-$(uname -r)"
+    end
+  end
+end
