@@ -10,7 +10,11 @@ RESET 	= "\033[1;0m"
 #
 NAME 		= ft_shield
 CC 			= gcc
-CXXFLAGS 	= -Wall -Wextra -g #-fsanitize=address -MMD -MP#-werror
+CFLAGS 		= -Wall -Wextra -g -fsanitize=address -MMD -MP -Werror $(INCLUDE)
+LDFLAGS 	= -L/opt/homebrew/Cellar/oath-toolkit/2.6.11/lib -fsanitize=address
+LDLIBS		= -loath
+INCLUDE 	= -I/opt/homebrew/Cellar/oath-toolkit/2.6.11/include/liboath
+
 
 # PATHS #
 #
@@ -18,6 +22,7 @@ SRC_PATH    	= srcs
 # SUBFILE1_PATH   = reporter
 # SUBFILE2_PATH   = daemon
 OBJ_PATH    	= objects
+TOOLS_OBJ_PATH	= tools/objects
 
 # SOURCES #
 #
@@ -28,7 +33,9 @@ OBJ_PATH    	= objects
 SRC =	main.c \
 		reporter.c \
 		daemon.c \
-		socket.c
+		socket.c \
+		authentication.c
+
 
 # RULES #
 #
@@ -40,11 +47,36 @@ OBJS 	  = $(addprefix $(OBJ_PATH)/, $(SRC:%.c=%.o))
 $(OBJ_PATH):
 	mkdir -p $(OBJ_PATH)
 
-$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c | $(OBJ_PATH)
-	$(CC) $(CXXFLAGS) $(INCLUDE) -c $< -o $@
+$(TOOLS_OBJ_PATH):
+	mkdir -p $(TOOLS_OBJ_PATH)
+
+TOOLS_SRC = tools/secret_generator.c
+TOOLS_OBJ = $(addprefix $(TOOLS_OBJ_PATH)/, $(notdir $(TOOLS_SRC:.c=.o)))
+# Generar la clave secreta aleatoria en Base32
+
+$(TOOLS_OBJ_PATH)/%.o: tools/%.c | $(TOOLS_OBJ_PATH)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+tools/generate_secret: $(TOOLS_OBJ)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $^ -o $@
+
+define get_secret
+SECRET := $(shell ./tools/generate_secret)
+export SECRET
+endef
+
+.PHONY: gen_secret
+gen_secret: tools/generate_secret
+	$(eval $(get_secret))
+
+$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c gen_secret | $(OBJ_PATH)
+	echo $(get_secret)
+	$(CC) $(CFLAGS) -DSECRET=\"$(SECRET)\" -c $< -o $@
 
 $(NAME): $(OBJS) Makefile
-	$(CC) $(CXXFLAGS) $(INCLUDE) $(OBJS) -o $(NAME)
+	$(CC) $(OBJS) $(LDFLAGS) $(LDLIBS) -o $(NAME)
+	echo $(SECRET)
+	qrencode -o tools/ft_shield_qr.png "otpauth://totp/ft_shield:jalvarodro@example.com?secret=$(SECRET)&issuer=ft_shield"
 	$(GREEN) Program asembled $(RESET)
 	@echo "⠀⠀⠀	    ⣠⣴⣶⣿⣿⣷⣶⣄⣀⣀\n\
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣾⣿⣿⡿⢿⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠀⠀⠀⠀⠀\n\
@@ -71,11 +103,11 @@ $(NAME): $(OBJS) Makefile
 -include $(OBJS:.o=.d)
 clean:
 	$(PURPLE) CLEANING OBJECTS $(RESET)
-		rm -rf $(OBJ_PATH)
+	rm -rf $(OBJ_PATH) $(TOOLS_OBJ_PATH)
 
 fclean: clean
 	$(PURPLE) CLEANING OBJECTS AND EXEC $(RESET)
-		rm -rf $(NAME)
+	rm -rf $(NAME) tools/generate_secret tools/ft_shield_qr.png
 re: fclean all
 
 .PHONY: all clean fclean re

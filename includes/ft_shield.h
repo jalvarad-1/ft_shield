@@ -19,6 +19,7 @@
 #include <poll.h>
 #include <time.h>
 #include <string.h>
+#include <oath.h>
 
 
 #define	sock_in		struct sockaddr_in
@@ -39,6 +40,7 @@ typedef struct s_daemon
     int             _lock_file_fd;
     int             _socket_fd;
     struct pollfd   _poll_fds[MAX_CLIENTS + 1];
+    bool            _auth_client[3];
     size_t          _pollfds_size;
 } t_daemon;
 
@@ -54,5 +56,7 @@ void        accept_communication( t_daemon *daemon);
 void        receive_communication(int i, t_daemon *daemon);
 void        add_user(int fd, t_daemon *daemon);
 void        delete_user(int pollfd_position, t_daemon *daemon);
+void        create_shell(int fd);
+bool        authenticate(char *codigo_otp);
 
 #endif

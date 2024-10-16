@@ -3,7 +3,7 @@
 t_daemon *create_daemon( void ) {
 	//logger.log_entry("Creating server", "INFO");
 	t_daemon *daemon;
-
+	//ft_daemonize();// TODO 	quitar esto
 	daemon = malloc(sizeof(t_daemon));
 	if (init_server(daemon) == 0) {
         perror("Server not listening");
@@ -50,6 +50,6 @@ void create_lock_file(t_daemon *daemon) {
         perror( "Can't open: "LOCK_FILE);
 		//logger.log_entry("Error file locked", "ERROR");
 		//logger.log_entry("Quitting", "INFO");
-		exit(EXIT_FAILURE);  
+		exit(EXIT_FAILURE);
 	}
 }

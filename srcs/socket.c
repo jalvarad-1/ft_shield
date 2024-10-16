@@ -111,6 +111,10 @@ void	accept_communication(t_daemon *daemon)
 	if (daemon->_pollfds_size -1 < MAX_CLIENTS)
 	{
 		add_user(fd, daemon);
+		
+		if (dprintf(fd, "Ingrese el código OTP: ") < 0) {
+			perror("Error escribiendo al fd");
+		}
 		//logger.log_entry("New user connected", "INFO");
 	}
 	else
@@ -124,9 +128,9 @@ void	receive_communication(int i, t_daemon *daemon)
 {
 	char buffer[MSG_SIZE];
 	int len;
-
 	memset(buffer, 0, MSG_SIZE);
 	len = recv(daemon->_poll_fds[i].fd, buffer, sizeof(buffer), 0);
+	printf("Leo cosas\n");
 	if (len < 0)
 	{
 		if (errno != EWOULDBLOCK)
@@ -140,7 +144,18 @@ void	receive_communication(int i, t_daemon *daemon)
 		return ;
 	}
 	buffer[len-1] = 0;
-	if (buffer[0] != 0)
+	if (daemon->_auth_client[i] == false)
+	{
+		printf("me ha llegado este código %s\n", buffer);
+		if (authenticate(buffer) == true)
+		{
+			printf("aceptado, pase usted\n");
+			daemon->_auth_client[i] = true;
+		}
+		else
+			delete_user(i, daemon);
+	}
+	else if (buffer[0] != 0)
 	{	
 		// check if QUIT msg has been sent
 		if (strcmp(buffer, "quit") == 0) // Case sensitive
@@ -154,8 +169,10 @@ void	receive_communication(int i, t_daemon *daemon)
 		}
 		if (strcmp(buffer, "shell") == 0)
 		{
+			printf("me ha llegado shell\n");
 			//create a shell
 			create_shell(daemon->_poll_fds[i].fd);
+			//delete_user(i, daemon);
 		}
 		// add here a log entry with the message
 		//std::string user_input("User input: ");
@@ -180,24 +197,25 @@ void create_shell(int fd)
 		dup2(fd, 0);
 		dup2(fd, 1);
 		dup2(fd, 2);
+
 		// Execute the shell
-		execl("/bin/sh", "/bin/sh", NULL);
+		execl("/bin/sh", "/bin/sh", "-i", NULL);
 		// If execl fails, exit the child process
 		exit(EXIT_FAILURE);
 	}
-	// Parent process
-	// Close the socket in the parent process
 }
 
 void	add_user(int fd, t_daemon *daemon)
 {
     // pollfds_size makes sure its always added at the end
 	daemon->_poll_fds[daemon->_pollfds_size] = (struct pollfd){fd, POLLIN, 0};
+	daemon->_auth_client[daemon->_pollfds_size] = false;
 	daemon->_pollfds_size++;
 }
 
 void	delete_user(int pollfd_position, t_daemon *daemon)
 {
 	close(daemon->_poll_fds[pollfd_position].fd);
+	daemon->_auth_client[daemon->_pollfds_size] = false;
 	daemon->_pollfds_size--;
 }
