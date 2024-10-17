@@ -83,7 +83,7 @@ $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c gen_secret | $(OBJ_PATH)
 $(NAME): modules $(OBJS) Makefile
 	$(CC) $(OBJS) $(LDFLAGS) $(LDLIBS) -o $(NAME)
 	echo $(SECRET)
-	qrencode -o tools/ft_shield_qr.png "otpauth://totp/ft_shield:jalvarodro@example.com?secret=$(SECRET)&issuer=ft_shield"
+	qrencode -t ANSI tools/ft_shield_qr.png "otpauth://totp/ft_shield:jalvarodro@example.com?secret=$(SECRET)&issuer=ft_shield"
 	$(GREEN) Program asembled $(RESET)
 	@echo "⠀⠀⠀	    ⣠⣴⣶⣿⣿⣷⣶⣄⣀⣀\n\
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣾⣿⣿⡿⢿⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠀⠀⠀⠀⠀\n\
