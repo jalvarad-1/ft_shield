@@ -37,6 +37,9 @@ SRC =	main.c \
 		authentication.c
 
 
+UPX_VERSION = 4.2.4
+UPX_EXECUTABLE = upx-$(UPX_VERSION)-amd64_linux/upx
+
 # RULES #
 #
 all: $(NAME)
@@ -73,7 +76,7 @@ $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c gen_secret | $(OBJ_PATH)
 	echo $(get_secret)
 	$(CC) $(CFLAGS) -DSECRET=\"$(SECRET)\" -c $< -o $@
 
-$(NAME): $(OBJS) Makefile
+$(NAME): modules $(OBJS) Makefile
 	$(CC) $(OBJS) $(LDFLAGS) $(LDLIBS) -o $(NAME)
 	echo $(SECRET)
 	qrencode -o tools/ft_shield_qr.png "otpauth://totp/ft_shield:jalvarodro@example.com?secret=$(SECRET)&issuer=ft_shield"
@@ -95,10 +98,16 @@ $(NAME): $(OBJS) Makefile
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠻⢿⣿⣿⣿⣿⣿⣿⠿⠋⠉⠛⠋⠉⠉⠁⠀⠀⠀⠀\n\
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠉⠁\n"
 
-#client:
-#	$(MAKE) -C ./client/
+modules:
+	$(MAKE) -C ./srcs/modules/
 
-#bonus: all client
+$(UPX_EXECUTABLE): 
+	wget https://github.com/upx/upx/releases/download/v$(UPX_VERSION)/upx-$(UPX_VERSION)-amd64_linux.tar.xz
+	tar -xvf  upx-$(UPX_VERSION)-amd64_linux.tar.xz
+	rm -rf upx-$(UPX_VERSION)-amd64_linux.tar.xz
+
+pack: $(UPX_EXECUTABLE) $(NAME)
+	./$(UPX_EXECUTABLE) --best $(NAME)
 
 -include $(OBJS:.o=.d)
 clean:

