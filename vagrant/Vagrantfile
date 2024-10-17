@@ -18,7 +18,7 @@ Vagrant.configure("2") do |config|
     config.vm.define "ft_shield" do |ft_shield|
       ft_shield.vm.hostname = "ft_shield"
       ft_shield.vm.provision "shell",
-        inline: "apt update; apt install -y git build-essential linux-headers-$(uname -r)"
+        inline: "apt update; apt install -y git build-essential linux-headers-$(uname -r) liboath-dev"
     end
   end
 end

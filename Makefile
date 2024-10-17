@@ -11,9 +11,13 @@ RESET 	= "\033[1;0m"
 NAME 		= ft_shield
 CC 			= gcc
 CFLAGS 		= -Wall -Wextra -g -fsanitize=address -MMD -MP -Werror $(INCLUDE)
-LDFLAGS 	= -L/opt/homebrew/Cellar/oath-toolkit/2.6.11/lib -fsanitize=address
+LDFLAGS		= -fsanitize=address
+#LDFLAGS 	= -L/opt/homebrew/Cellar/oath-toolkit/2.6.11/lib -fsanitize=address
+INCLUDE 	= -I/usr/include/liboath
+#FLags for mac
+#LDFLAGS 	= -L/opt/homebrew/Cellar/oath-toolkit/2.6.11/lib -fsanitize=address
+#INCLUDE 	= -I/opt/homebrew/Cellar/oath-toolkit/2.6.11/include/liboath
 LDLIBS		= -loath
-INCLUDE 	= -I/opt/homebrew/Cellar/oath-toolkit/2.6.11/include/liboath
 
 
 # PATHS #
