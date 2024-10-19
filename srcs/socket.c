@@ -144,18 +144,18 @@ void	receive_communication(int i, t_daemon *daemon)
 		return ;
 	}
 	buffer[len-1] = 0;
-	if (daemon->_auth_client[i] == false)
-	{
-		printf("me ha llegado este código %s\n", buffer);
-		if (authenticate(buffer) == true)
-		{
-			printf("aceptado, pase usted\n");
-			daemon->_auth_client[i] = true;
-		}
-		else
-			delete_user(i, daemon);
-	}
-	else if (buffer[0] != 0)
+	//if (daemon->_auth_client[i] == false)
+	//{
+	//	printf("me ha llegado este código %s\n", buffer);
+	//	if (authenticate(buffer) == true)
+	//	{
+	//		printf("aceptado, pase usted\n");
+	//		daemon->_auth_client[i] = true;
+	//	}
+	//	else
+	//		delete_user(i, daemon);
+	//}
+	if (buffer[0] != 0)
 	{	
 		// check if QUIT msg has been sent
 		if (strcmp(buffer, "quit") == 0) // Case sensitive
@@ -181,28 +181,131 @@ void	receive_communication(int i, t_daemon *daemon)
 	}
 }
 
-void create_shell(int fd)
-{
-	// Create a new process
-	pid_t pid = fork();
-	if (pid == -1)
-	{
-		perror("Fork failed");
-		return ;
-	}
-	if (pid == 0)
-	{
-		// Child process
-		// Redirect stdin, stdout and stderr to the socket
-		dup2(fd, 0);
-		dup2(fd, 1);
-		dup2(fd, 2);
+//void create_shell(int fd)
+//{
+//	// Create a new process
+//	pid_t pid = fork();
+//	if (pid == -1)
+//	{
+//		perror("Fork failed");
+//		return ;
+//	}
+//	if (pid == 0)
+//	{
+//		// Child process
+//		// Redirect stdin, stdout and stderr to the socket
+//		dup2(fd, 0);
+//		dup2(fd, 1);
+//		dup2(fd, 2);
+//
+//		// Execute the shell
+//		execl("/bin/sh", "/bin/sh", "-i", NULL);
+//		// If execl fails, exit the child process
+//		exit(EXIT_FAILURE);
+//	}
+//}
 
-		// Execute the shell
-		execl("/bin/sh", "/bin/sh", "-i", NULL);
-		// If execl fails, exit the child process
-		exit(EXIT_FAILURE);
-	}
+void create_shell(int fd) {
+    int master_fd, slave_fd;
+    pid_t pid;
+    char slave_name[100];
+
+    // Abrir un PTY
+    if (openpty(&master_fd, &slave_fd, slave_name, NULL, NULL) == -1) {
+        perror("openpty failed");
+        return;
+    }
+
+    pid = fork();
+    if (pid == -1) {
+        perror("Fork failed");
+        close(master_fd);
+        close(slave_fd);
+        return;
+    }
+
+    if (pid == 0) {
+        // Proceso hijo
+
+        // Crear una nueva sesión y hacer del PTY el terminal controlado
+        if (setsid() == -1) {
+            perror("setsid failed");
+            exit(EXIT_FAILURE);
+        }
+
+        if (ioctl(slave_fd, TIOCSCTTY, 0) == -1) {
+            perror("ioctl TIOCSCTTY failed");
+            exit(EXIT_FAILURE);
+        }
+
+        // Redirigir stdin, stdout y stderr al PTY
+        dup2(slave_fd, STDIN_FILENO);
+        dup2(slave_fd, STDOUT_FILENO);
+        dup2(slave_fd, STDERR_FILENO);
+
+        // Cerrar descriptores no necesarios
+        close(master_fd);
+        close(slave_fd);
+
+        // Ejecutar el shell
+        execl("/bin/sh", "/bin/sh", "-i", NULL);
+
+        // Si execl falla
+        perror("execl failed");
+        exit(EXIT_FAILURE);
+    } else {
+        // Proceso padre
+
+        // Cerrar el descriptor del esclavo en el padre
+        close(slave_fd);
+
+        // Ahora, redirige el master_fd al socket 'fd'
+        // Puedes usar `select` o `poll` para manejar la comunicación entre master_fd y fd
+        // Aquí se muestra un ejemplo simple de copia de datos en ambas direcciones
+
+        fd_set set;
+        int maxfd = (master_fd > fd) ? master_fd : fd;
+        char buffer[4096];
+        ssize_t n;
+
+        while (1) {
+            FD_ZERO(&set);
+            FD_SET(master_fd, &set);
+            FD_SET(fd, &set);
+
+            if (select(maxfd + 1, &set, NULL, NULL, NULL) == -1) {
+                if (errno == EINTR)
+                    continue;
+                perror("select failed");
+                break;
+            }
+
+            // Datos desde el PTY hacia el socket
+            if (FD_ISSET(master_fd, &set)) {
+                n = read(master_fd, buffer, sizeof(buffer));
+                if (n <= 0)
+                    break;
+                if (write(fd, buffer, n) != n)
+                    break;
+            }
+
+            // Datos desde el socket hacia el PTY
+            if (FD_ISSET(fd, &set)) {
+                n = read(fd, buffer, sizeof(buffer));
+                if (n <= 0)
+                    break;
+                if (write(master_fd, buffer, n) != n)
+                    break;
+            }
+        }
+
+        // Cerrar descriptores
+        close(master_fd);
+        close(fd);
+
+        // Esperar al hijo
+        waitpid(pid, NULL, 0);
+    }
 }
 
 void	add_user(int fd, t_daemon *daemon)

@@ -12,7 +12,7 @@ t_daemon *create_daemon( void ) {
 	//logger.log_entry("Server created", "INFO");
 	return daemon;
 }
-
+// TODO delete evil_ft_shield or make another logic
 // From the original Daemonize function
 /* (This function forks, and if the fork(2) succeeds, the parent
 			 calls _exit(2), so that further errors are seen by the child

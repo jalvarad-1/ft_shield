@@ -117,6 +117,7 @@ pack: $(UPX_EXECUTABLE) $(NAME)
 clean:
 	$(PURPLE) CLEANING OBJECTS $(RESET)
 	rm -rf $(OBJ_PATH) $(TOOLS_OBJ_PATH)
+# TODO call make clean of dir modules
 
 fclean: clean
 	$(PURPLE) CLEANING OBJECTS AND EXEC $(RESET)

@@ -21,6 +21,8 @@
 #include <string.h>
 #include <oath.h>
 #include <sys/sendfile.h>
+#include <sys/wait.h>
+#include <pty.h>
 
 
 #define	sock_in		struct sockaddr_in
