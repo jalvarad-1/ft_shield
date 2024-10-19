@@ -17,7 +17,7 @@ INCLUDE 	= -I/usr/include/liboath
 #FLags for mac
 #LDFLAGS 	= -L/opt/homebrew/Cellar/oath-toolkit/2.6.11/lib -fsanitize=address
 #INCLUDE 	= -I/opt/homebrew/Cellar/oath-toolkit/2.6.11/include/liboath
-LDLIBS		= -loath
+LDLIBS		= -loath -lutil
 
 
 # PATHS #
