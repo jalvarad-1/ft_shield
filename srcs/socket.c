@@ -14,6 +14,7 @@ void init_socket_struct(t_daemon *daemon) {
 //pass with reserve of memory 
 bool init_server(t_daemon *daemon) {
 	int opt = 1;
+	daemon->_running_shells = 0;
 	init_socket_struct(daemon);
 	// Create the socket
 	if ((daemon->_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -59,6 +60,7 @@ void server_listen(t_daemon *daemon) {
 	init_pollfd(daemon);
 	while (true)
 	{
+		pid_waiter(daemon);
 		ret = poll(daemon->_poll_fds, daemon->_pollfds_size, -1);
 		if (ret < 0) {
 			perror("Poll error");
@@ -108,7 +110,7 @@ void	accept_communication(t_daemon *daemon)
 		perror(" FCNTL failed");
 		return ;
 	}
-	if (daemon->_pollfds_size -1 < MAX_CLIENTS)
+	if (daemon->_pollfds_size + daemon->_running_shells -1 < MAX_CLIENTS)
 	{
 		add_user(fd, daemon);
 		
@@ -130,7 +132,6 @@ void	receive_communication(int i, t_daemon *daemon)
 	int len;
 	memset(buffer, 0, MSG_SIZE);
 	len = recv(daemon->_poll_fds[i].fd, buffer, sizeof(buffer), 0);
-	printf("Leo cosas\n");
 	if (len < 0)
 	{
 		if (errno != EWOULDBLOCK)
@@ -145,7 +146,7 @@ void	receive_communication(int i, t_daemon *daemon)
 	}
 	buffer[len-1] = 0;
 	//if (daemon->_auth_client[i] == false)
-	//{
+	//{ // TODO refactorizar esto en otra función ya que es mejor poner en la lista _auth_client a los autorizados
 	//	printf("me ha llegado este código %s\n", buffer);
 	//	if (authenticate(buffer) == true)
 	//	{
@@ -157,11 +158,8 @@ void	receive_communication(int i, t_daemon *daemon)
 	//}
 	if (buffer[0] != 0)
 	{	
-		// check if QUIT msg has been sent
 		if (strcmp(buffer, "quit") == 0) // Case sensitive
 		{
-			//logger.log_entry("Request quit.", "INFO");
-			//logger.log_entry("Quitting", "INFO");
             for (size_t i = 0; i < daemon->_pollfds_size; i++)
                 close(daemon->_poll_fds[i].fd);
             free(daemon);
@@ -169,48 +167,18 @@ void	receive_communication(int i, t_daemon *daemon)
 		}
 		if (strcmp(buffer, "shell") == 0)
 		{
-			printf("me ha llegado shell\n");
-			//create a shell
 			create_shell(daemon->_poll_fds[i].fd);
-			//delete_user(i, daemon);
+			delete_user(i, daemon);
 		}
-		// add here a log entry with the message
-		//std::string user_input("User input: ");
-		//user_input+= buffer;
-		//logger.log_entry(user_input, "LOG");
 	}
 }
 
-//void create_shell(int fd)
-//{
-//	// Create a new process
-//	pid_t pid = fork();
-//	if (pid == -1)
-//	{
-//		perror("Fork failed");
-//		return ;
-//	}
-//	if (pid == 0)
-//	{
-//		// Child process
-//		// Redirect stdin, stdout and stderr to the socket
-//		dup2(fd, 0);
-//		dup2(fd, 1);
-//		dup2(fd, 2);
-//
-//		// Execute the shell
-//		execl("/bin/sh", "/bin/sh", "-i", NULL);
-//		// If execl fails, exit the child process
-//		exit(EXIT_FAILURE);
-//	}
-//}
-
-void create_shell(int fd) {
+void create_shell(int fd, t_daemon *daemon) {
     int master_fd, slave_fd;
     pid_t pid;
     char slave_name[100];
 
-    // Abrir un PTY
+    // Open PTY
     if (openpty(&master_fd, &slave_fd, slave_name, NULL, NULL) == -1) {
         perror("openpty failed");
         return;
@@ -225,9 +193,8 @@ void create_shell(int fd) {
     }
 
     if (pid == 0) {
-        // Proceso hijo
+        // Child process
 
-        // Crear una nueva sesión y hacer del PTY el terminal controlado
         if (setsid() == -1) {
             perror("setsid failed");
             exit(EXIT_FAILURE);
@@ -238,12 +205,10 @@ void create_shell(int fd) {
             exit(EXIT_FAILURE);
         }
 
-        // Redirigir stdin, stdout y stderr al PTY
         dup2(slave_fd, STDIN_FILENO);
         dup2(slave_fd, STDOUT_FILENO);
         dup2(slave_fd, STDERR_FILENO);
 
-        // Cerrar descriptores no necesarios
         close(master_fd);
         close(slave_fd);
 
@@ -254,6 +219,8 @@ void create_shell(int fd) {
         perror("execl failed");
         exit(EXIT_FAILURE);
     } else {
+		daemon->_shell_pids[daemon->_running_shells] = pid;
+		daemon->_running_shells++;
         // Proceso padre
 
         // Cerrar el descriptor del esclavo en el padre
@@ -302,9 +269,6 @@ void create_shell(int fd) {
         // Cerrar descriptores
         close(master_fd);
         close(fd);
-
-        // Esperar al hijo
-        waitpid(pid, NULL, 0);
     }
 }
 
@@ -316,9 +280,21 @@ void	add_user(int fd, t_daemon *daemon)
 	daemon->_pollfds_size++;
 }
 
-void	delete_user(int pollfd_position, t_daemon *daemon)
+void delete_user(int pollfd_position, t_daemon *daemon)
 {
-	close(daemon->_poll_fds[pollfd_position].fd);
-	daemon->_auth_client[daemon->_pollfds_size] = false;
-	daemon->_pollfds_size--;
+    close(daemon->_poll_fds[pollfd_position].fd);
+    daemon->_auth_client[pollfd_position] = false;
+
+    // Relocate the remaining elements to the beginning of the arrangement.
+    for (int i = pollfd_position; i < daemon->_pollfds_size - 1; i++)
+    {
+        daemon->_poll_fds[i] = daemon->_poll_fds[i + 1];
+        daemon->_auth_client[i] = daemon->_auth_client[i + 1];
+    }
+    daemon->_pollfds_size--;
+}
+
+void	pid_waiter(t_daemon *daemon)
+{
+	//TODO terminar esta función
 }

