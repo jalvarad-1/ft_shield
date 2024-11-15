@@ -3,7 +3,7 @@
 
 t_daemon *create_daemon( void ) {
 	t_daemon *daemon;
-	ft_daemonize();
+	//ft_daemonize();
 	daemon = malloc(sizeof(t_daemon));
 	if (init_server(daemon) == 0) {
         perror("Server not listening");

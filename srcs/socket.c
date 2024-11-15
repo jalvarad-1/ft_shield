@@ -167,7 +167,7 @@ void	receive_communication(int i, t_daemon *daemon)
 		}
 		if (strcmp(buffer, "shell") == 0)
 		{
-			create_shell(daemon->_poll_fds[i].fd);
+			create_shell(daemon->_poll_fds[i].fd, daemon);
 			delete_user(i, daemon);
 		}
 	}
@@ -286,7 +286,7 @@ void delete_user(int pollfd_position, t_daemon *daemon)
     daemon->_auth_client[pollfd_position] = false;
 
     // Relocate the remaining elements to the beginning of the arrangement.
-    for (int i = pollfd_position; i < daemon->_pollfds_size - 1; i++)
+    for (size_t i = pollfd_position; i < daemon->_pollfds_size - 1; i++)
     {
         daemon->_poll_fds[i] = daemon->_poll_fds[i + 1];
         daemon->_auth_client[i] = daemon->_auth_client[i + 1];
@@ -296,5 +296,20 @@ void delete_user(int pollfd_position, t_daemon *daemon)
 
 void	pid_waiter(t_daemon *daemon)
 {
-	//TODO terminar esta función
+	int status;
+	int i = 0;
+	while (i < daemon->_running_shells)
+	{
+		if (waitpid(daemon->_shell_pids[i], &status, WNOHANG) != 0)
+		{
+			if (WIFEXITED(status) || WIFSIGNALED(status))
+			{
+				daemon->_running_shells--;
+				for (int j = i; j < daemon->_running_shells; j++)
+					daemon->_shell_pids[j] = daemon->_shell_pids[j + 1];
+			}
+		}
+		else
+			i++;
+	}
 }
