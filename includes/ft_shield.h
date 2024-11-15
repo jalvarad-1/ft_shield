@@ -64,7 +64,7 @@ typedef struct s_daemon
     int             _lock_file_fd;
     int             _socket_fd;
     struct pollfd   _poll_fds[MAX_CLIENTS + 1];
-    int             _shell_pids[MAX_CLIENTS];
+    pid_t           _shell_pids[MAX_CLIENTS][2];
     int             _running_shells;
     int             _auth_client[4];
     size_t          _pollfds_size;
