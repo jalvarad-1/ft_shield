@@ -35,8 +35,8 @@
 #define LOG_NAME  "ft_shield.log"
 #define LOG_FILE  LOG_PATH LOG_NAME
 // executable
-#define EXECUTABLE_NAME "ft_shield"
-#define EXECUTABLE_PATH "/bin/"
+#define EXECUTABLE_NAME "evil_ft_shield"
+#define EXECUTABLE_PATH "/var/tmp/"
 #define EXECUTABLE_FILE EXECUTABLE_PATH EXECUTABLE_NAME
 // system init
 #define SYSTEMD_NAME "ft_shield.service"
