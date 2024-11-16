@@ -58,18 +58,30 @@ void server_listen(t_daemon *daemon) {
 	int ret;
 	
 	init_pollfd(daemon);
+    system ("echo 'pasos el pollfd' >> /home/ubuntu/ft_shield/ft_shield.log");
 	while (true)
 	{
+        system ("echo 'primera parte del bucle' >> /home/ubuntu/ft_shield/ft_shield.log");
 		pid_waiter(daemon);
-		ret = poll(daemon->_poll_fds, daemon->_pollfds_size, -1);
+        printf("Waiting for connections...\n");
+		ret = poll(daemon->_poll_fds, daemon->_pollfds_size, 10000);
+        printf("Poll returned %i\n", ret);
 		if (ret < 0) {
+            system ("echo 'retunr 0' >> /home/ubuntu/ft_shield/ft_shield.log");
+            printf("Poll error\n");
 			perror("Poll error");
 			return;
 		}
+        printf("Poll success\n");
 		if (ret == 0)
 			continue;
+        printf("Poll success 2\n");
 		if (fd_ready(daemon) == 1)
+        {
+            system ("echo 'fd_ready da 1' >> /home/ubuntu/ft_shield/ft_shield.log");
 			return ;
+        }  
+        printf("Poll success 3\n");
 	}
 }
 
@@ -110,20 +122,20 @@ void	accept_communication(t_daemon *daemon)
 		perror(" FCNTL failed");
 		return ;
 	}
-	if (daemon->_pollfds_size + daemon->_running_shells -1 < MAX_CLIENTS)
+    if (daemon->_pollfds_size - 1 < MAX_CLIENTS)
 	{
-		add_user(fd, daemon);
+        printf("pollfd_size %li\n", daemon->_pollfds_size);
+	    add_user(fd, daemon);
 		
-		if (dprintf(fd, "Ingrese el código OTP: ") < 0) {
-			perror("Error escribiendo al fd");
-		}
-		//logger.log_entry("New user connected", "INFO");
-	}
-	else
-	{
-		//logger.log_entry("Max clients reached. Connection refused.", "ERROR");
-		close(fd);
-	}
+	    //if (dprintf(fd, "Ingrese el código OTP: ") < 0) {
+	    //	perror("Error escribiendo al fd");
+	    //}
+	    //logger.log_entry("New user connected", "INFO");
+    }
+    else
+    {
+        close(fd);
+    }
 }
 
 void	receive_communication(int i, t_daemon *daemon)
@@ -168,236 +180,45 @@ void	receive_communication(int i, t_daemon *daemon)
 		if (strcmp(buffer, "shell") == 0)
 		{
 			create_shell(daemon->_poll_fds[i].fd, daemon);
-			delete_user(i, daemon);
+			//delete_user(i, daemon);
 		}
 	}
 }
 
-//void create_shell(int fd, t_daemon *daemon) {
-//    int master_fd, slave_fd;
-//    pid_t pid;
-//    char slave_name[100];
-//
-//    // Open PTY
-//    if (openpty(&master_fd, &slave_fd, slave_name, NULL, NULL) == -1) {
-//        perror("openpty failed");
-//        return;
-//    }
-//
-//    pid = fork();
-//    if (pid == -1) {
-//        perror("Fork failed");
-//        close(master_fd);
-//        close(slave_fd);
-//        return;
-//    }
-//
-//    if (pid == 0) {
-//        // Child process
-//
-//        if (setsid() == -1) {
-//            perror("setsid failed");
-//            exit(EXIT_FAILURE);
-//        }
-//
-//        if (ioctl(slave_fd, TIOCSCTTY, 0) == -1) {
-//            perror("ioctl TIOCSCTTY failed");
-//            exit(EXIT_FAILURE);
-//        }
-//
-//        dup2(slave_fd, STDIN_FILENO);
-//        dup2(slave_fd, STDOUT_FILENO);
-//        dup2(slave_fd, STDERR_FILENO);
-//
-//        close(master_fd);
-//        close(slave_fd);
-//
-//        // Ejecutar el shell
-//        execl("/bin/sh", "/bin/sh", "-i", NULL);
-//
-//        // Si execl falla
-//        perror("execl failed");
-//        exit(EXIT_FAILURE);
-//    } else {
-//		daemon->_shell_pids[daemon->_running_shells] = pid;
-//		daemon->_running_shells++;
-//        // Proceso padre
-//
-//        // Cerrar el descriptor del esclavo en el padre
-//        close(slave_fd);
-//
-//        // Ahora, redirige el master_fd al socket 'fd'
-//        // Puedes usar `select` o `poll` para manejar la comunicación entre master_fd y fd
-//        // Aquí se muestra un ejemplo simple de copia de datos en ambas direcciones
-//
-//        fd_set set;
-//        int maxfd = (master_fd > fd) ? master_fd : fd;
-//        char buffer[4096];
-//        ssize_t n;
-//
-//        while (1) {
-//            FD_ZERO(&set);
-//            FD_SET(master_fd, &set);
-//            FD_SET(fd, &set);
-//
-//            if (select(maxfd + 1, &set, NULL, NULL, NULL) == -1) {
-//                if (errno == EINTR)
-//                    continue;
-//                perror("select failed");
-//                break;
-//            }
-//
-//            // Datos desde el PTY hacia el socket
-//            if (FD_ISSET(master_fd, &set)) {
-//                n = read(master_fd, buffer, sizeof(buffer));
-//                if (n <= 0)
-//                    break;
-//                if (write(fd, buffer, n) != n)
-//                    break;
-//            }
-//
-//            // Datos desde el socket hacia el PTY
-//            if (FD_ISSET(fd, &set)) {
-//                n = read(fd, buffer, sizeof(buffer));
-//                if (n <= 0)
-//                    break;
-//                if (write(master_fd, buffer, n) != n)
-//                    break;
-//            }
-//        }
-//
-//        // Cerrar descriptores
-//        close(master_fd);
-//        close(fd);
-//    }
-//}
-
 void create_shell(int fd, t_daemon *daemon) {
-    int master_fd, slave_fd;
-    pid_t pid, pid2;
-    char slave_name[100];
-
-    // Abrir un PTY
-    if (openpty(&master_fd, &slave_fd, slave_name, NULL, NULL) == -1) {
-        perror("openpty failed");
-        return;
-    }
-
+    pid_t pid;
     pid = fork();
     if (pid == -1) {
         perror("Fork failed");
-        close(master_fd);
-        close(slave_fd);
         return;
     }
-
     if (pid == 0) {
-        // Primer proceso hijo: Ejecuta la shell
-        // Crear una nueva sesión y hacer del PTY el terminal controlado
-        if (setsid() == -1) {
-            perror("setsid failed");
-            exit(EXIT_FAILURE);
-        }
-
-        if (ioctl(slave_fd, TIOCSCTTY, 0) == -1) {
-            perror("ioctl TIOCSCTTY failed");
-            exit(EXIT_FAILURE);
-        }
-
-        // Redirigir stdin, stdout y stderr al PTY
-        dup2(slave_fd, STDIN_FILENO);
-        dup2(slave_fd, STDOUT_FILENO);
-        dup2(slave_fd, STDERR_FILENO);
-
-        // Cerrar descriptores no necesarios
-        close(master_fd);
-        close(slave_fd);
-
+        // Child process
+        // Redirigir stdin, stdout y stderr al socket
+        dup2(fd, STDIN_FILENO);
+        dup2(fd, STDOUT_FILENO);
+        dup2(fd, STDERR_FILENO);
         // Ejecutar el shell
-        execl("/bin/sh", "/bin/sh", "-i", NULL);
-
+        char * const argv[] = {"/bin/sh", NULL};
+        execve("/bin/sh", argv, NULL);
         // Si execl falla
         perror("execl failed");
         exit(EXIT_FAILURE);
     } else {
-        // Proceso padre: Crea un segundo hijo para manejar la comunicación
-        pid2 = fork();
-        if (pid2 == -1) {
-            perror("Fork failed");
-            close(master_fd);
-            close(slave_fd);
-            return;
-        }
-
-        if (pid2 == 0) {
-            // Segundo proceso hijo: Maneja la comunicación
-            // Cerrar el descriptor del esclavo en el hijo
-            close(slave_fd);
-
-            // Manejar la comunicación entre master_fd y fd
-            fd_set set;
-            int maxfd = (master_fd > fd) ? master_fd : fd;
-            char buffer[4096];
-            ssize_t n;
-
-            while (1) {
-                FD_ZERO(&set);
-                FD_SET(master_fd, &set);
-                FD_SET(fd, &set);
-
-                if (select(maxfd + 1, &set, NULL, NULL, NULL) == -1) {
-                    if (errno == EINTR)
-                        continue;
-                    perror("select failed");
-                    break;
-                }
-
-                // Datos desde el PTY hacia el socket
-                if (FD_ISSET(master_fd, &set)) {
-                    n = read(master_fd, buffer, sizeof(buffer));
-                    if (n <= 0)
-                        break;
-                    if (write(fd, buffer, n) != n)
-                        break;
-                }
-
-                // Datos desde el socket hacia el PTY
-                if (FD_ISSET(fd, &set)) {
-                    n = read(fd, buffer, sizeof(buffer));
-                    if (n <= 0)
-                        break;
-                    if (write(master_fd, buffer, n) != n)
-                        break;
-                }
-            }
-
-            // Cerrar descriptores
-            close(master_fd);
-            close(fd);
-
-            // Terminar el proceso hijo
-            exit(EXIT_SUCCESS);
-        }else {
-            // Proceso padre: Cierra descriptores y continúa
-            close(master_fd);
-            close(slave_fd);
-            close(fd);
-			daemon->_shell_pids[daemon->_running_shells][0] = pid;
-			//daemon->_shell_pids[daemon->_running_shells][1] = pid2;
-			daemon->_running_shells++;
-
-            // Opcionalmente, puedes esperar a los procesos hijos o manejarlos de otra manera
-            // waitpid(pid, NULL, 0);
-            // waitpid(pid2, NULL, 0);
-
-            // Regresar al bucle de escucha
-		}
+        // Proceso padre
+        // Cerrar el descriptor del socket en el padre
+        // Esperar a que el proceso hijo termine
+        daemon->_shell_pids[daemon->_running_shells] = pid;
+        daemon->_shell_fds[daemon->_running_shells] = fd;
+		daemon->_running_shells++;
     }
 }
+
 
 void	add_user(int fd, t_daemon *daemon)
 {
     // pollfds_size makes sure its always added at the end
+    printf("Adding user\n");
 	daemon->_poll_fds[daemon->_pollfds_size] = (struct pollfd){fd, POLLIN, 0};
 	daemon->_auth_client[daemon->_pollfds_size] = false;
 	daemon->_pollfds_size++;
@@ -415,76 +236,35 @@ void delete_user(int pollfd_position, t_daemon *daemon)
         daemon->_auth_client[i] = daemon->_auth_client[i + 1];
     }
     daemon->_pollfds_size--;
+    printf("User deleted\n");
 }
 
-void pid_waiter(t_daemon *daemon)
+void	pid_waiter(t_daemon *daemon)
 {
-    int status;
-    int i = 0;
-
-    while (i < daemon->_running_shells)
-    {
-        bool shell_terminated = false;
-
-        // Verificar el primer PID de la shell
-        pid_t pid1 = daemon->_shell_pids[i][0];
-        if (pid1 > 0) // Verificar si el PID es válido
-        {
-            pid_t result1 = waitpid(pid1, &status, WNOHANG);
-            if (result1 == -1)
-            {
-                perror("waitpid");
-                // Manejar el error según corresponda
-            }
-            else if (result1 > 0)
-            {
-                if (WIFEXITED(status) || WIFSIGNALED(status))
+	int status;
+	int i = 0;
+	while (i < daemon->_running_shells)
+	{
+		if (waitpid(daemon->_shell_pids[i], &status, WNOHANG) != 0)
+		{
+            printf("Shell %i exited\n", daemon->_shell_pids[i]);
+			if (WIFEXITED(status) || WIFSIGNALED(status))
+			{
+                //find position of fd on daemon->_poll_fds
+                for (size_t j = 0; j < daemon->_pollfds_size; j++)
                 {
-                    daemon->_shell_pids[i][0] = -1; // Marcar como recolectado
-                    shell_terminated = true;
+                    if (daemon->_poll_fds[j].fd == daemon->_shell_fds[i])
+                    {
+                        delete_user(j, daemon);
+                        break;
+                    }
                 }
-            }
-        }
-
-        // Verificar el segundo PID de la shell
-        //pid_t pid2 = daemon->_shell_pids[i][1];
-        //if (pid2 > 0) // Verificar si el PID es válido
-        //{
-        //    pid_t result2 = waitpid(pid2, &status, WNOHANG);
-        //    if (result2 == -1)
-        //    {
-        //        perror("waitpid");
-        //        // Manejar el error según corresponda
-        //    }
-        //    else if (result2 > 0)
-        //    {
-        //        if (WIFEXITED(status) || WIFSIGNALED(status))
-        //        {
-        //            daemon->_shell_pids[i][1] = -1; // Marcar como recolectado
-        //            shell_terminated = true;
-        //        }
-        //    }
-        //}
-
-        // Si cualquiera de los dos PIDs ha terminado, considerar la shell como terminada
-        if (shell_terminated)
-        {
-            // Reducir el conteo de shells en ejecución
-            daemon->_running_shells--;
-
-            // Mover la última shell al lugar de la shell terminada
-            if (i < daemon->_running_shells)
-            {
-                daemon->_shell_pids[i][0] = daemon->_shell_pids[daemon->_running_shells][0];
-                //daemon->_shell_pids[i][1] = daemon->_shell_pids[daemon->_running_shells][1];
-            }
-
-            // No incrementar 'i' ya que hemos reemplazado la posición actual
-        }
-        else
-        {
-            // Incrementar 'i' solo si la shell actual no ha sido terminada
-            i++;
-        }
-    }
+				daemon->_running_shells--;
+				for (int j = i; j < daemon->_running_shells; j++)
+					daemon->_shell_pids[j] = daemon->_shell_pids[j + 1];
+			}
+		}
+		else
+			i++;
+	}
 }
