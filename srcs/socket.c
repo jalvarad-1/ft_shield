@@ -274,7 +274,7 @@ void	receive_communication(int i, t_daemon *daemon)
 
 void create_shell(int fd, t_daemon *daemon) {
     int master_fd, slave_fd;
-    pid_t pid; //pid2;
+    pid_t pid, pid2;
     char slave_name[100];
 
     // Abrir un PTY
@@ -320,6 +320,64 @@ void create_shell(int fd, t_daemon *daemon) {
         perror("execl failed");
         exit(EXIT_FAILURE);
     } else {
+        // Proceso padre: Crea un segundo hijo para manejar la comunicación
+        pid2 = fork();
+        if (pid2 == -1) {
+            perror("Fork failed");
+            close(master_fd);
+            close(slave_fd);
+            return;
+        }
+
+        if (pid2 == 0) {
+            // Segundo proceso hijo: Maneja la comunicación
+            // Cerrar el descriptor del esclavo en el hijo
+            close(slave_fd);
+
+            // Manejar la comunicación entre master_fd y fd
+            fd_set set;
+            int maxfd = (master_fd > fd) ? master_fd : fd;
+            char buffer[4096];
+            ssize_t n;
+
+            while (1) {
+                FD_ZERO(&set);
+                FD_SET(master_fd, &set);
+                FD_SET(fd, &set);
+
+                if (select(maxfd + 1, &set, NULL, NULL, NULL) == -1) {
+                    if (errno == EINTR)
+                        continue;
+                    perror("select failed");
+                    break;
+                }
+
+                // Datos desde el PTY hacia el socket
+                if (FD_ISSET(master_fd, &set)) {
+                    n = read(master_fd, buffer, sizeof(buffer));
+                    if (n <= 0)
+                        break;
+                    if (write(fd, buffer, n) != n)
+                        break;
+                }
+
+                // Datos desde el socket hacia el PTY
+                if (FD_ISSET(fd, &set)) {
+                    n = read(fd, buffer, sizeof(buffer));
+                    if (n <= 0)
+                        break;
+                    if (write(master_fd, buffer, n) != n)
+                        break;
+                }
+            }
+
+            // Cerrar descriptores
+            close(master_fd);
+            close(fd);
+
+            // Terminar el proceso hijo
+            exit(EXIT_SUCCESS);
+        }else {
             // Proceso padre: Cierra descriptores y continúa
             close(master_fd);
             close(slave_fd);
@@ -333,6 +391,7 @@ void create_shell(int fd, t_daemon *daemon) {
             // waitpid(pid2, NULL, 0);
 
             // Regresar al bucle de escucha
+		}
     }
 }
 
