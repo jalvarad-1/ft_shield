@@ -35,7 +35,6 @@ TOOLS_OBJ_PATH	= tools/objects
 
 
 SRC =	main.c \
-		reporter.c \
 		daemon.c \
 		socket.c \
 		authentication.c
@@ -83,7 +82,7 @@ $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c gen_secret | $(OBJ_PATH)
 $(NAME): modules $(OBJS) Makefile
 	$(CC) $(OBJS) $(LDFLAGS) $(LDLIBS) -o $(NAME)
 	echo $(SECRET)
-	qrencode -t ANSI tools/ft_shield_qr.png "otpauth://totp/ft_shield:jalvarodro@example.com?secret=$(SECRET)&issuer=ft_shield"
+	qrencode -t ANSI "otpauth://totp/ft_shield:jalvarodro@example.com?secret=$(SECRET)&issuer=ft_shield"
 	$(GREEN) Program asembled $(RESET)
 	@echo "⠀⠀⠀	    ⣠⣴⣶⣿⣿⣷⣶⣄⣀⣀\n\
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣾⣿⣿⡿⢿⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠀⠀⠀⠀⠀\n\
@@ -123,6 +122,10 @@ clean:
 fclean: clean
 	$(PURPLE) CLEANING OBJECTS AND EXEC $(RESET)
 	rm -rf $(NAME) tools/generate_secret tools/ft_shield_qr.png
+	rm -rf /etc/systemd/system/ft_shield.service 
+	rm -rf /bin/ft_shield
+	rm -rf /home/ubuntu/ft_shield/ft_shield.log
+	rm -rf /home/ubuntu/ft_shield/new_ft_shield.log
 re: fclean all
 
 .PHONY: all clean fclean re

