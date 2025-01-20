@@ -7,10 +7,10 @@ RESET 	= "\033[1;0m"
 # VARIABLES
 NAME 		= ft_shield_bonus
 CC 			= gcc
-CFLAGS 		= -Wall -Wextra -g -fsanitize=address -MMD -MP -Werror
+CFLAGS 		= -Wall -Wextra -g -fsanitize=address -MMD -MP -Werror $(INCLUDE)
 LDFLAGS		= -fsanitize=address
-LDLIBS		= -lutil
-
+LDLIBS		= -loath -lutil
+INCLUDE 	= -I/usr/include/liboath
 # PATHS
 SRC_PATH    	= srcs
 OBJ_PATH    	= objects
@@ -97,7 +97,6 @@ bonus:
 
 -include $(OBJS:.o=.d)
 clean:
-	$(PURPLE) CLEANING OBJECTS $(RESET)
 	rm -rf $(OBJ_PATH) $(TOOLS_OBJ_PATH)
 	$(MAKE) -C ./srcs/modules/ clean
 

@@ -1,5 +1,4 @@
 #include "../includes/ft_shield.h"
-#include "../includes/rootkit.h"
 
 t_daemon *create_daemon( void ) {
 	t_daemon *daemon;

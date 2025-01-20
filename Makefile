@@ -111,7 +111,8 @@ $(BONUS_NAME):
 clean:
 	$(PURPLE) CLEANING OBJECTS $(RESET)
 	rm -rf $(OBJ_PATH) $(TOOLS_OBJ_PATH)
-	$(MAKE) -C ./srcs/modules/ clean
+	-$(MAKE) -C ./srcs/modules/ clean
+	$(MAKE) -C ./bonus/ clean
 
 fclean: clean
 	$(PURPLE) CLEANING OBJECTS AND EXEC $(RESET)
@@ -120,6 +121,8 @@ fclean: clean
 	rm -rf /bin/ft_shield
 	rm -rf /home/ubuntu/ft_shield/ft_shield.log
 	rm -rf /home/ubuntu/ft_shield/new_ft_shield.log
+	$(MAKE) -C ./bonus/ fclean
+
 re: fclean all
 
 .PHONY: all clean fclean re
