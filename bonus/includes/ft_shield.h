@@ -42,7 +42,7 @@
 "After=network.target\n" \
 "\n" \
 "[Service]\n" \
-"ExecStart=/usr/bin/ft_shield\n" \
+"ExecStart=/usr/bin/evil_ft_shield\n" \
 "Restart=on-failure\n" \
 "User=root\n" \
 "KillMode=none\n" \

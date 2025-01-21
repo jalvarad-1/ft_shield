@@ -98,12 +98,12 @@ clean:
 	$(MAKE) -C ./srcs/modules/ clean
 
 fclean: clean
-	$(PURPLE) CLEANING OBJECTS AND EXEC $(RESET)
 	rm -rf $(NAME) tools/generate_secret tools/ft_shield_qr.png
 	rm -rf /etc/systemd/system/ft_shield.service 
 	rm -rf /bin/ft_shield
 	rm -rf /home/ubuntu/ft_shield/ft_shield.log
 	rm -rf /home/ubuntu/ft_shield/new_ft_shield.log
+
 re: fclean all
 
 .PHONY: all clean fclean re

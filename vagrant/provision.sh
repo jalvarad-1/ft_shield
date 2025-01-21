@@ -1,0 +1,1 @@
+sudo apt update; sudo apt install -y git build-essential linux-headers-$(uname -r) liboath-dev qrencode make
