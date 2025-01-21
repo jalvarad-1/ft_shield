@@ -13,7 +13,7 @@
 #endif
 
 #define MODULE_NAME "lkmdemo"
-#define MAGIC_PREFIX "ft_shield"
+#define MAGIC_PREFIX "evil_ft_shield"
 
 static int hidden_pid = 0; // PID to hide, passed from userspace
 module_param(hidden_pid, int, 0644);
