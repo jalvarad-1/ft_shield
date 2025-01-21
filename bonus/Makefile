@@ -92,9 +92,6 @@ $(UPX_EXECUTABLE):
 pack: $(UPX_EXECUTABLE) $(NAME)
 	./$(UPX_EXECUTABLE) --best $(NAME)
 
-bonus:
-	$(MAKE) -C ./bonus/
-
 -include $(OBJS:.o=.d)
 clean:
 	rm -rf $(OBJ_PATH) $(TOOLS_OBJ_PATH)

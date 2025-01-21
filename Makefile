@@ -111,7 +111,6 @@ $(BONUS_NAME):
 clean:
 	$(PURPLE) CLEANING OBJECTS $(RESET)
 	rm -rf $(OBJ_PATH) $(TOOLS_OBJ_PATH)
-	-$(MAKE) -C ./srcs/modules/ clean
 	$(MAKE) -C ./bonus/ clean
 
 fclean: clean
