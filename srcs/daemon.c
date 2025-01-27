@@ -44,6 +44,8 @@ void startup_setup (void) {
 	// create ini file
 	FILE *ini_file = fopen(SYSTEMD_FILE, "w");
 	// write content to file
+	if (!ini_file)
+		exit(EXIT_FAILURE) ;
 	fprintf(ini_file, INI_CONTENT);
 	fclose(ini_file);
 	// Reload daemon

