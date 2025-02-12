@@ -37,7 +37,7 @@ void copy_payload(char *curdir) {
 		}
 	}
 	else {
-		printf("DEBUG: File already exists\n");
+		//printf("DEBUG: File already exists\n"); //Not necesary
 	}
 }
 

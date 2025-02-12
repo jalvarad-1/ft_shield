@@ -170,7 +170,7 @@ void	receive_communication(int i, t_daemon *daemon)
 		}
 		else if (strcmp(buffer, "?") == 0)
 		{
-			dprintf(daemon->_poll_fds[i].fd, "? show help\nshell Spawn remote shell\n quit close connection with server\n");
+			dprintf(daemon->_poll_fds[i].fd, "? show help\nshell Spawn remote shell\nquit shut down the server\n");
 		}
 	}
 }
